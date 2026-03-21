@@ -3,7 +3,7 @@
     ║   Apple UI Library  —  v2.0                         ║
     ║                                                      ║
     ║   Features:                                          ║
-    ║   • 4 themes: Light, Dark, Pink, Grey               ║
+    ║   • 2 themes: Light, Dark                           ║
     ║   • Toggle notification (bottom-left badge)         ║
     ║   • Unload button in window API                     ║
     ║   • Switch, Slider, Dropdown, Keybind, TextField    ║
@@ -17,7 +17,7 @@
         local lib = loadstring(game:HttpGet("YOUR_URL"))()
         local win = lib:init("Apple", false, Enum.KeyCode.RightShift, true)
 
-        win:SetTheme("Dark")   -- "Light" | "Dark" | "Pink" | "Grey"
+        win:SetTheme("Dark")   -- "Light" | "Dark"
 
         local tab = win:Section("Combat")
         tab:Switch("God Mode", false, function(v) print(v) end)
@@ -86,50 +86,6 @@ local THEMES = {
         BtnGhost    = Color3.fromRGB(36,  36,  44),
         BtnText     = Color3.fromRGB(10,  132, 255),
         Toast       = Color3.fromRGB(36,  36,  44),
-    },
-    Pink = {
-        Main        = Color3.fromRGB(255, 245, 250),
-        Topbar      = Color3.fromRGB(255, 255, 255),
-        Sidebar     = Color3.fromRGB(255, 255, 255),
-        Card        = Color3.fromRGB(255, 255, 255),
-        CardHover   = Color3.fromRGB(255, 232, 244),
-        Input       = Color3.fromRGB(255, 242, 249),
-        Divider     = Color3.fromRGB(255, 210, 235),
-        Accent      = Color3.fromRGB(236, 64,  122),
-        AccentLight = Color3.fromRGB(255, 224, 240),
-        TextPrimary = Color3.fromRGB(60,  20,  40),
-        TextSub     = Color3.fromRGB(150, 80,  110),
-        TextMuted   = Color3.fromRGB(200, 150, 175),
-        TabActive   = Color3.fromRGB(236, 64,  122),
-        TabActiveBg = Color3.fromRGB(255, 224, 240),
-        TabText     = Color3.fromRGB(236, 64,  122),
-        SwitchOn    = Color3.fromRGB(236, 64,  122),
-        SwitchOff   = Color3.fromRGB(230, 200, 215),
-        BtnGhost    = Color3.fromRGB(255, 245, 250),
-        BtnText     = Color3.fromRGB(236, 64,  122),
-        Toast       = Color3.fromRGB(255, 255, 255),
-    },
-    Grey = {
-        Main        = Color3.fromRGB(235, 235, 237),
-        Topbar      = Color3.fromRGB(248, 248, 250),
-        Sidebar     = Color3.fromRGB(248, 248, 250),
-        Card        = Color3.fromRGB(248, 248, 250),
-        CardHover   = Color3.fromRGB(225, 225, 232),
-        Input       = Color3.fromRGB(228, 228, 232),
-        Divider     = Color3.fromRGB(200, 200, 208),
-        Accent      = Color3.fromRGB(100, 100, 120),
-        AccentLight = Color3.fromRGB(215, 215, 225),
-        TextPrimary = Color3.fromRGB(30,  30,  38),
-        TextSub     = Color3.fromRGB(90,  90,  105),
-        TextMuted   = Color3.fromRGB(150, 150, 165),
-        TabActive   = Color3.fromRGB(80,  80,  100),
-        TabActiveBg = Color3.fromRGB(215, 215, 225),
-        TabText     = Color3.fromRGB(80,  80,  100),
-        SwitchOn    = Color3.fromRGB(100, 100, 120),
-        SwitchOff   = Color3.fromRGB(195, 195, 208),
-        BtnGhost    = Color3.fromRGB(235, 235, 237),
-        BtnText     = Color3.fromRGB(80,  80,  100),
-        Toast       = Color3.fromRGB(248, 248, 250),
     },
 }
 
@@ -369,39 +325,13 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         Size=UDim2.new(0,1,1,0), BorderSizePixel=0, ZIndex=3,
     }, leftPanel)
 
-    -- search
-    local searchFrame = new("Frame", {
-        BackgroundColor3=TH.Input,
-        Position=UDim2.new(0,12,0,10),
-        Size=UDim2.new(1,-24,0,32), ZIndex=3,
-    }, leftPanel)
-    corner(searchFrame)
-    local searchStroke = stroke(searchFrame, TH.Divider, 1)
-
-    new("ImageLabel", {
-        BackgroundTransparency=1,
-        Position=UDim2.new(0,8,0.5,0), AnchorPoint=Vector2.new(0,0.5),
-        Size=UDim2.new(0,16,0,16),
-        Image="rbxassetid://2804603863",
-        ImageColor3=TH.TextMuted, ScaleType="Fit", ZIndex=4,
-    }, searchFrame)
-
-    local searchBox = new("TextBox", {
-        BackgroundTransparency=1,
-        Position=UDim2.new(0,30,0,0), Size=UDim2.new(1,-38,1,0),
-        Font=Enum.Font.Gotham, PlaceholderText="Search",
-        PlaceholderColor3=TH.TextMuted, Text="",
-        TextColor3=TH.TextPrimary, TextSize=14,
-        TextXAlignment=Enum.TextXAlignment.Left,
-        ClearTextOnFocus=false, ZIndex=4,
-    }, searchFrame)
 
     -- sidebar scroll
     local sideScroll = new("ScrollingFrame", {
         Active=true, BackgroundTransparency=1,
         BorderSizePixel=0,
-        Position=UDim2.new(0,8,0,52),
-        Size=UDim2.new(1,-16,1,-62),
+        Position=UDim2.new(0,8,0,10),
+        Size=UDim2.new(1,-16,1,-20),
         CanvasSize=UDim2.new(0,0,0,0),
         ScrollBarThickness=2, ScrollBarImageColor3=TH.Divider,
         ZIndex=3,
@@ -426,16 +356,6 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         TextXAlignment=Enum.TextXAlignment.Left, ZIndex=3,
     }, rightPanel)
 
-    -- ── SEARCH FILTER ────────────────────────────────────
-    local searchBindName = "AppleSearch_"..tostring(math.floor(os.clock()*1000))
-    RunService:BindToRenderStep(searchBindName, 1, function()
-        local q = string.upper(searchBox.Text)
-        for _, v in ipairs(sideScroll:GetChildren()) do
-            if v:IsA("TextButton") then
-                v.Visible = (q == "") or (string.find(string.upper(v.Text), q, 1, true) ~= nil)
-            end
-        end
-    end)
 
     -- ── MODAL DIMMER ─────────────────────────────────────
     local dimmer = new("Frame", {
@@ -545,10 +465,6 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
     reg(titleLabel,    "TextColor3",       "TextPrimary")
     reg(leftPanel,     "BackgroundColor3", "Sidebar")
     reg(leftBorder,    "BackgroundColor3", "Divider")
-    reg(searchFrame,   "BackgroundColor3", "Input")
-    reg(searchStroke,  "Color",            "Divider")
-    reg(searchBox,     "TextColor3",       "TextPrimary")
-    reg(searchBox,     "PlaceholderColor3","TextMuted")
     reg(rightPanel,    "BackgroundColor3", "Main")
     reg(sectionTitle,  "TextColor3",       "TextMuted")
     reg(n1Card,        "BackgroundColor3", "Card")
@@ -1363,7 +1279,6 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         tw(topbar,      {BackgroundColor3 = t.Topbar},  0.25)
         tw(leftPanel,   {BackgroundColor3 = t.Sidebar}, 0.25)
         tw(rightPanel,  {BackgroundColor3 = t.Main},    0.25)
-        tw(searchFrame, {BackgroundColor3 = t.Input},   0.25)
         tw(topbarBorder,{BackgroundColor3 = t.Divider}, 0.25)
         tw(leftBorder,  {BackgroundColor3 = t.Divider}, 0.25)
         tw(n1btn,       {BackgroundColor3 = t.Accent},  0.25)
@@ -1372,9 +1287,7 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         tw(n2btn2,      {TextColor3       = t.Accent},  0.25)
         tw(titleLabel,  {TextColor3       = t.TextPrimary}, 0.25)
         tw(sectionTitle,{TextColor3       = t.TextMuted},   0.25)
-        tw(searchBox,   {TextColor3       = t.TextPrimary}, 0.25)
         pcall(function() sideScroll.ScrollBarImageColor3 = t.Divider end)
-        pcall(function() searchBox.PlaceholderColor3     = t.TextMuted end)
         -- repaint all work area scrolls
         for _, ws in ipairs(workareas_list) do
             tw(ws, {BackgroundColor3 = t.Main}, 0.25)
