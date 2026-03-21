@@ -191,11 +191,11 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
     end
 
     scrgui = new("ScreenGui", {
-        Name            = "WiiHubGui",
-        ResetOnSpawn    = false,
-        ZIndexBehavior  = Enum.ZIndexBehavior.Sibling,
-        DisplayOrder    = 100,
+        Name         = "WiiHubGui",
+        ResetOnSpawn = false,
     })
+    pcall(function() scrgui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling end)
+    pcall(function() scrgui.DisplayOrder   = 100 end)
 
     if syn and syn.protect_gui then
         syn.protect_gui(scrgui)
@@ -395,11 +395,11 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
         Position                = UDim2.new(0, 8, 0, 52),
         Size                    = UDim2.new(1, -16, 1, -62),
         CanvasSize              = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize     = "Y",
         ScrollBarThickness      = 2,
         ScrollBarImageColor3    = TH.Divider,
         ZIndex                  = 3,
     }, leftPanel)
+    pcall(function() sideScroll.AutomaticCanvasSize = Enum.AutomaticCanvasSize.Y end)
     list(sideScroll, Enum.FillDirection.Vertical, 3)
 
     -- ── RIGHT CONTENT AREA ───────────────────────────────
@@ -1271,9 +1271,9 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
             local pInner = new("Frame", {
                 BackgroundTransparency = 1,
                 Size                   = UDim2.new(1, 0, 0, 0),
-                AutomaticSize          = "Y",
                 ZIndex                 = 13,
             }, panel)
+            pcall(function() pInner.AutomaticSize = Enum.AutomaticSize.Y end)
             pad(pInner, 4, 4, 4, 4)
             local pLayout = list(pInner, Enum.FillDirection.Vertical, 2)
 
@@ -1368,8 +1368,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
                 AnchorPoint      = Vector2.new(1, 0.5),
                 BackgroundColor3 = TH.OffWhite,
                 Position         = UDim2.new(1, 0, 0.5, 0),
-                Size             = UDim2.new(0, 0, 0, 26),
-                AutomaticSize    = "X",
+                Size             = UDim2.new(0, 90, 0, 26),
                 AutoButtonColor  = false,
                 Font             = Enum.Font.GothamSemibold,
                 Text             = key.Name,
@@ -1377,6 +1376,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
                 TextSize         = 12,
                 ZIndex           = 5,
             }, row)
+            pcall(function() badge.AutomaticSize = Enum.AutomaticSize.X end)
             pad(badge, 0, 10, 0, 10)
             corner(badge, UDim.new(0, 5))
             stroke(badge, TH.Divider, 1)
