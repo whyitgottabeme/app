@@ -1028,18 +1028,16 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         end
 
         -- ── DROPDOWN ──────────────────────────────────────
-        -- The floating panel is parented to rightPanel (not workScroll)
-        -- so it is never clipped by the ScrollingFrame.
-        -- We reposition it every frame while open using AbsolutePosition.
         function sec:Dropdown(name, options, callback)
             options = options or {}
             local selected = options[1] or "Select…"
             local open = false
 
-            -- row inside the scroll (just the header bar)
-            local wrap = new("Frame", {
+            -- wrap is a TextButton so it natively receives clicks — no hBtn needed
+            local wrap = new("TextButton", {
                 BackgroundColor3=TH.Card, Size=UDim2.new(1,0,0,44),
-                BorderSizePixel=0, ZIndex=4,
+                BorderSizePixel=0, AutoButtonColor=false,
+                Text="", ZIndex=4,
             }, workScroll)
             corner(wrap)
             local wrapStroke = stroke(wrap, TH.Divider, 1)
@@ -1072,12 +1070,13 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
             }, wrap)
             reg(chevron, "TextColor3", "TextMuted")
 
-            -- floating panel parented to rightPanel — never clipped by workScroll
+            -- floating panel parented to rightPanel so it is never
+            -- clipped by the ScrollingFrame
             local panel = new("Frame", {
                 BackgroundColor3=TH.Card, BorderSizePixel=0,
-                Position=UDim2.new(0,0,0,0), -- repositioned in openDD
+                Position=UDim2.new(0,0,0,0),
                 Size=UDim2.new(0,0,0,0),
-                ClipsDescendants=true, ZIndex=20, Visible=false,
+                ClipsDescendants=true, ZIndex=30, Visible=false,
             }, rightPanel)
             corner(panel)
             local panelStroke = stroke(panel, TH.Divider, 1)
@@ -1085,20 +1084,17 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
             reg(panelStroke, "Color", "Divider")
 
             local pInner = new("Frame", {
-                BackgroundTransparency=1, Size=UDim2.new(1,0,0,0), ZIndex=21,
+                BackgroundTransparency=1, Size=UDim2.new(1,0,0,0), ZIndex=31,
             }, panel)
             pcall(function() pInner.AutomaticSize = Enum.AutomaticSize.Y end)
             pad(pInner, 4, 4, 4, 4)
             local pLayout = listLayout(pInner, Enum.FillDirection.Vertical, 2)
 
-            -- compute panel position relative to rightPanel using AbsolutePosition
             local function repositionPanel()
                 local wAbs  = wrap.AbsolutePosition
                 local rpAbs = rightPanel.AbsolutePosition
                 local wSz   = wrap.AbsoluteSize
-                local relX  = wAbs.X - rpAbs.X
-                local relY  = wAbs.Y - rpAbs.Y + wSz.Y + 4
-                panel.Position = UDim2.new(0, relX, 0, relY)
+                panel.Position = UDim2.new(0, wAbs.X - rpAbs.X, 0, wAbs.Y - rpAbs.Y + wSz.Y + 4)
                 panel.Size     = UDim2.new(0, wSz.X, 0, panel.Size.Y.Offset)
             end
 
@@ -1114,7 +1110,6 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
                 repositionPanel()
                 panel.Visible = true
                 tw(chevron, {Rotation=270}, 0.18)
-                -- wait one frame so AbsoluteContentSize is valid
                 task.defer(function()
                     local h = pLayout.AbsoluteContentSize.Y + 8
                     local wSz = wrap.AbsoluteSize
@@ -1123,13 +1118,19 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
                 end)
             end
 
+            -- header click = toggle
+            wrap.MouseButton1Click:Connect(function()
+                if open then closeDD() else openDD() end
+            end)
+
+            -- option items
             for _, opt in ipairs(options) do
                 local item = new("TextButton", {
                     BackgroundColor3=TH.Card, BackgroundTransparency=1,
-                    Size=UDim2.new(1,0,0,32), AutoButtonColor=false,
+                    Size=UDim2.new(1,0,0,36), AutoButtonColor=false,
                     Font=Enum.Font.Gotham, Text=opt,
                     TextColor3=TH.TextSub, TextSize=13,
-                    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=22,
+                    TextXAlignment=Enum.TextXAlignment.Left, ZIndex=32,
                 }, pInner)
                 corner(item, UDim.new(0,5))
                 pad(item, 0, 10, 0, 10)
@@ -1140,45 +1141,26 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
                     tw(item, {BackgroundTransparency=1, TextColor3=TH.TextSub}, 0.1)
                 end)
                 item.MouseButton1Click:Connect(function()
-                    selected = opt; selLbl.Text = opt
+                    selected = opt
+                    selLbl.Text = opt
                     closeDD()
                     if callback then task.spawn(pcall, callback, opt) end
                 end)
             end
 
-            local hBtn = new("TextButton", {
-                BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text="", ZIndex=6,
-            }, wrap)
-            hBtn.MouseButton1Click:Connect(function()
-                if open then closeDD() else openDD() end
-            end)
-            -- hide the click-catcher when open so panel items receive input
-            local _origClose = closeDD
-            local _origOpen  = openDD
-            closeDD = function()
-                _origClose()
-                hBtn.Visible = true
-            end
-            openDD = function()
-                hBtn.Visible = false
-                _origOpen()
-            end
-
-            -- close if user clicks anywhere else
+            -- click-outside to close
             UserInputService.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 and open then
-                    task.defer(function()
-                        -- check if click was inside the panel
-                        local mp = UserInputService:GetMouseLocation()
-                        local pp = panel.AbsolutePosition
-                        local ps = panel.AbsoluteSize
-                        local wp = wrap.AbsolutePosition
-                        local ws = wrap.AbsoluteSize
-                        local inPanel = mp.X >= pp.X and mp.X <= pp.X+ps.X and mp.Y >= pp.Y and mp.Y <= pp.Y+ps.Y
-                        local inWrap  = mp.X >= wp.X and mp.X <= wp.X+ws.X and mp.Y >= wp.Y and mp.Y <= wp.Y+ws.Y
-                        if not inPanel and not inWrap then closeDD() end
-                    end)
-                end
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1 or not open then return end
+                task.defer(function()
+                    local mp = UserInputService:GetMouseLocation()
+                    local pp = panel.AbsolutePosition
+                    local ps = panel.AbsoluteSize
+                    local wp = wrap.AbsolutePosition
+                    local ws = wrap.AbsoluteSize
+                    local inPanel = mp.X>=pp.X and mp.X<=pp.X+ps.X and mp.Y>=pp.Y and mp.Y<=pp.Y+ps.Y
+                    local inWrap  = mp.X>=wp.X and mp.X<=wp.X+ws.X and mp.Y>=wp.Y and mp.Y<=wp.Y+ws.Y
+                    if not inPanel and not inWrap then closeDD() end
+                end)
             end)
 
             local api = {}
