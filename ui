@@ -833,34 +833,46 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
         -- ── BUTTON ────────────────────────────────────────
         function sec:Button(name, callback, style)
             style = style or "ghost"
-            local bgCol, txtCol, hoverCol, strCol
-            if style == "primary" then
-                bgCol=TH.Accent; txtCol=COL_WHITE; hoverCol=TH.TabActive; strCol=nil
-            elseif style == "danger" then
-                bgCol=TH.BtnGhost; txtCol=COL_RED; hoverCol=TH.CardHover; strCol=COL_RED
-            else -- ghost
-                bgCol=TH.BtnGhost; txtCol=TH.BtnText; hoverCol=TH.CardHover; strCol=TH.Accent
+
+            -- use functions so hover always reads current TH values
+            local function getBg()
+                if style == "primary" then return TH.Accent
+                elseif style == "danger" then return TH.BtnGhost
+                else return TH.BtnGhost end
             end
+            local function getTxt()
+                if style == "primary" then return COL_WHITE
+                elseif style == "danger" then return COL_RED
+                else return TH.BtnText end
+            end
+            local function getHover()
+                return TH.CardHover
+            end
+
             local btn = new("TextButton", {
-                BackgroundColor3=bgCol, Size=UDim2.new(1,0,0,38),
+                BackgroundColor3=getBg(), Size=UDim2.new(1,0,0,38),
                 AutoButtonColor=false, Font=Enum.Font.GothamSemibold,
-                Text=name or "Button", TextColor3=txtCol, TextSize=14, ZIndex=4,
+                Text=name or "Button", TextColor3=getTxt(), TextSize=14, ZIndex=4,
             }, workScroll)
             corner(btn)
             local btnStroke
-            if strCol then btnStroke = stroke(btn, strCol, 1) end
+            if style ~= "primary" then
+                local strCol = style == "danger" and COL_RED or TH.Accent
+                btnStroke = stroke(btn, strCol, 1)
+            end
 
+            -- register for theme repaints
             reg(btn, "BackgroundColor3", style=="primary" and "Accent" or "BtnGhost")
-            reg(btn, "TextColor3", style=="primary" and "Accent" or (style=="danger" and "Accent" or "BtnText"))
+            reg(btn, "TextColor3",       style=="primary" and "Accent" or "BtnText")
             if btnStroke then
-                reg(btnStroke, "Color", style=="danger" and "Accent" or "Accent")
+                reg(btnStroke, "Color", "Accent")
             end
 
             btn.MouseEnter:Connect(function()
-                tw(btn, {BackgroundColor3=TH.CardHover}, 0.12)
+                tw(btn, {BackgroundColor3=getHover()}, 0.12)
             end)
             btn.MouseLeave:Connect(function()
-                tw(btn, {BackgroundColor3=bgCol}, 0.12)
+                tw(btn, {BackgroundColor3=getBg()}, 0.12)
             end)
             btn.MouseButton1Down:Connect(function()
                 tw(btn, {Size=UDim2.new(1,0,0,34)}, 0.08)
@@ -1224,6 +1236,17 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
             hBtn.MouseButton1Click:Connect(function()
                 if open then closeDD() else openDD() end
             end)
+            -- hide the click-catcher when open so panel items receive input
+            local _origClose = closeDD
+            local _origOpen  = openDD
+            closeDD = function()
+                _origClose()
+                hBtn.Visible = true
+            end
+            openDD = function()
+                hBtn.Visible = false
+                _origOpen()
+            end
 
             -- close if user clicks anywhere else
             UserInputService.InputBegan:Connect(function(input)
@@ -1324,27 +1347,47 @@ function lib:init(titleText, dosplash, visiblekey, deleteprevious)
     function window:SetTheme(name)
         local t = THEMES[name]
         if not t then return end
+        -- mutate TH in place so all live closures (hover, etc.) see new values
         for k, v in pairs(t) do TH[k] = v end
+        -- repaint all registered static elements
         for _, entry in ipairs(themedObjects) do
             local inst, prop, key, fn = entry[1], entry[2], entry[3], entry[4]
             if fn then
                 pcall(fn, t)
-            elseif inst and prop and key and t[key] then
+            elseif inst and inst.Parent and prop and key and t[key] then
                 pcall(function() tw(inst, {[prop]=t[key]}, 0.25) end)
             end
         end
-        sideScroll.ScrollBarImageColor3 = t.Divider
-        searchBox.PlaceholderColor3     = t.TextMuted
-        sectionTitle.TextColor3         = t.TextMuted
+        -- repaint structural frames not in registry
+        tw(main,        {BackgroundColor3 = t.Main},    0.25)
+        tw(topbar,      {BackgroundColor3 = t.Topbar},  0.25)
+        tw(leftPanel,   {BackgroundColor3 = t.Sidebar}, 0.25)
+        tw(rightPanel,  {BackgroundColor3 = t.Main},    0.25)
+        tw(searchFrame, {BackgroundColor3 = t.Input},   0.25)
+        tw(topbarBorder,{BackgroundColor3 = t.Divider}, 0.25)
+        tw(leftBorder,  {BackgroundColor3 = t.Divider}, 0.25)
+        tw(n1btn,       {BackgroundColor3 = t.Accent},  0.25)
+        tw(n2btn1,      {BackgroundColor3 = t.Accent},  0.25)
+        tw(n2btn2,      {BackgroundColor3 = t.Card},    0.25)
+        tw(n2btn2,      {TextColor3       = t.Accent},  0.25)
+        tw(titleLabel,  {TextColor3       = t.TextPrimary}, 0.25)
+        tw(sectionTitle,{TextColor3       = t.TextMuted},   0.25)
+        tw(searchBox,   {TextColor3       = t.TextPrimary}, 0.25)
+        pcall(function() sideScroll.ScrollBarImageColor3 = t.Divider end)
+        pcall(function() searchBox.PlaceholderColor3     = t.TextMuted end)
+        -- repaint all work area scrolls
+        for _, ws in ipairs(workareas_list) do
+            tw(ws, {BackgroundColor3 = t.Main}, 0.25)
+        end
+        -- repaint sidebar tab buttons
         for i, btn in ipairs(sections_list) do
             local isActive = workareas_list[i] and workareas_list[i].Visible
             if isActive then
+                tw(btn, {BackgroundColor3=t.TabActiveBg, TextColor3=t.TabText}, 0.25)
                 btn.BackgroundTransparency = 0
-                btn.BackgroundColor3 = t.TabActiveBg
-                btn.TextColor3 = t.TabText
             else
                 btn.BackgroundTransparency = 1
-                btn.TextColor3 = t.TextSub
+                tw(btn, {TextColor3=t.TextSub}, 0.25)
             end
         end
     end
