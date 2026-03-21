@@ -80,7 +80,7 @@ end
 
 local function stroke(parent, color, thick)
     local s = Instance.new("UIStroke")
-    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.ApplyStrokeMode = "Border"
     s.Color = color or TH.Divider
     s.Thickness = thick or 1
     s.Parent = parent
@@ -223,7 +223,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
             Size                 = UDim2.new(0, 160, 0, 160),
             ZIndex               = 41,
             Image                = "rbxassetid://12621719043",
-            ScaleType            = Enum.ScaleType.Fit,
+            ScaleType            = "Fit",
         }, splash)
 
         -- shadow
@@ -368,7 +368,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
         Size                   = UDim2.new(0, 16, 0, 16),
         Image                  = "rbxassetid://2804603863",
         ImageColor3            = TH.TextMuted,
-        ScaleType              = Enum.ScaleType.Fit,
+        ScaleType              = "Fit",
         ZIndex                 = 4,
     }, searchFrame)
 
@@ -395,7 +395,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
         Position                = UDim2.new(0, 8, 0, 52),
         Size                    = UDim2.new(1, -16, 1, -62),
         CanvasSize              = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize     = Enum.AutomaticCanvasSize.Y,
+        AutomaticCanvasSize     = "Y",
         ScrollBarThickness      = 2,
         ScrollBarImageColor3    = TH.Divider,
         ZIndex                  = 3,
@@ -488,7 +488,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
         ZIndex               = 10,
         Image                = "rbxassetid://4871684504",
         ImageColor3          = TH.TextSub,
-        ScaleType            = Enum.ScaleType.Fit,
+        ScaleType            = "Fit",
     }, notif1Card)
 
     local n1title = new("TextLabel", {
@@ -538,7 +538,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
         ZIndex               = 10,
         Image                = "rbxassetid://12608260095",
         ImageColor3          = TH.TextSub,
-        ScaleType            = Enum.ScaleType.Fit,
+        ScaleType            = "Fit",
     }, notif2Card)
 
     local n2title = new("TextLabel", {
@@ -684,7 +684,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
             ZIndex               = 21,
             Image                = icon or "rbxassetid://4871684504",
             ImageColor3          = TH.TextSub,
-            ScaleType            = Enum.ScaleType.Fit,
+            ScaleType            = "Fit",
         }, toast)
 
         new("TextLabel", {
@@ -1271,7 +1271,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
             local pInner = new("Frame", {
                 BackgroundTransparency = 1,
                 Size                   = UDim2.new(1, 0, 0, 0),
-                AutomaticSize          = Enum.AutomaticSize.Y,
+                AutomaticSize          = "Y",
                 ZIndex                 = 13,
             }, panel)
             pad(pInner, 4, 4, 4, 4)
@@ -1369,7 +1369,7 @@ function lib:init(title, dosplash, visiblekey, deleteprevious)
                 BackgroundColor3 = TH.OffWhite,
                 Position         = UDim2.new(1, 0, 0.5, 0),
                 Size             = UDim2.new(0, 0, 0, 26),
-                AutomaticSize    = Enum.AutomaticSize.X,
+                AutomaticSize    = "X",
                 AutoButtonColor  = false,
                 Font             = Enum.Font.GothamSemibold,
                 Text             = key.Name,
