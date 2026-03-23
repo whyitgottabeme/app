@@ -277,9 +277,10 @@ end
 ------------------------------------------------------------------------
 -- TAB BUTTON FACTORY
 ------------------------------------------------------------------------
-local function NewTabBtn(tabList, label)
+local function NewTabBtn(tabList, label, layoutOrder)
     local btn=Instance.new("TextButton"); btn.Name=label; btn.Size=UDim2.new(1,0,0,30)
-    btn.BackgroundColor3=Theme.Panel; btn.BackgroundTransparency=1; btn.Text=""; btn.BorderSizePixel=0; btn.Parent=tabList; Corner(btn,6)
+    btn.BackgroundColor3=Theme.Panel; btn.BackgroundTransparency=1; btn.Text=""; btn.BorderSizePixel=0
+    btn.LayoutOrder=layoutOrder or 0; btn.Parent=tabList; Corner(btn,6)
     local bar=Instance.new("Frame"); bar.Size=UDim2.new(0,3,0.6,0); bar.Position=UDim2.new(0,0,0.2,0)
     bar.BackgroundColor3=Theme.Accent; bar.BackgroundTransparency=1; bar.BorderSizePixel=0; bar.Parent=btn; Corner(bar,99); T(bar,"BackgroundColor3","Accent")
     local lbl=Instance.new("TextLabel"); lbl.Text=label; lbl.TextSize=13; lbl.Font=Enum.Font.GothamMedium
@@ -357,6 +358,7 @@ function FiberLib.new(title, subtitle)
     UserInputService.InputBegan:Connect(function(i,gp) if gp then return end; if i.KeyCode==Enum.KeyCode.LeftControl then vis=not vis; main.Visible=vis end end)
 
     self._gui=gui; self._main=main; self._sidebar=sidebar; self._tabList=tabList; self._content=content
+    self._tabOrder=0
     self:_BuildSettingsTab()
     return self
 end
@@ -365,8 +367,9 @@ end
 -- ADD TAB
 ------------------------------------------------------------------------
 function FiberLib:AddTab(name, icon)
+    self._tabOrder = self._tabOrder + 1
     local label=(icon and icon.."  " or "")..name
-    local btn,bar,lbl=NewTabBtn(self._tabList,label)
+    local btn,bar,lbl=NewTabBtn(self._tabList, label, self._tabOrder)
     local page=NewPage(self._content,name)
     local tabData={name=name,_button=btn,_accentBar=bar,_btnLabel=lbl,_page=page}
 
@@ -374,10 +377,12 @@ function FiberLib:AddTab(name, icon)
     btn.MouseEnter:Connect(function() if self._activeTab~=tabData then Tw(btn,{BackgroundTransparency=0.7},0.1) end end)
     btn.MouseLeave:Connect(function() if self._activeTab~=tabData then Tw(btn,{BackgroundTransparency=1},0.1) end end)
 
-    local settingsIdx=nil; for i,td in ipairs(self._tabs) do if td.name=="Settings" then settingsIdx=i; break end end
-    if settingsIdx then table.insert(self._tabs,settingsIdx,tabData) else table.insert(self._tabs,tabData) end
+    -- Always append; visual order is controlled by LayoutOrder on the button
+    table.insert(self._tabs, tabData)
 
-    if #self._tabs==1 or (#self._tabs>1 and self._tabs[1]==tabData and not self._activeTab) then self:_SelectTab(tabData) end
+    -- Auto-select the very first user tab added
+    local userTabCount=0; for _,td in ipairs(self._tabs) do if td.name~="Settings" then userTabCount=userTabCount+1 end end
+    if userTabCount==1 then self:_SelectTab(tabData) end
 
     local sectionAPI={}
 
@@ -431,7 +436,7 @@ end
 -- SETTINGS TAB
 ------------------------------------------------------------------------
 function FiberLib:_BuildSettingsTab()
-    local btn,bar,lbl=NewTabBtn(self._tabList,"⚙  Settings")
+    local btn,bar,lbl=NewTabBtn(self._tabList,"⚙  Settings", 9999)
     local page=NewPage(self._content,"Settings")
     local tabData={name="Settings",_button=btn,_accentBar=bar,_btnLabel=lbl,_page=page}
 
