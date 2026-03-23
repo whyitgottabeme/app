@@ -391,14 +391,27 @@ local function BuildElements(sectionInner)
             if open then CloseDropdown() else OpenDropdown() end
         end)
 
-        -- Close if user clicks outside
+        -- Close if user clicks outside — check against listScroll bottom edge not cont.AbsoluteSize
+        local justOpened = false
         UserInputService.InputBegan:Connect(function(i)
-            if open and i.UserInputType==Enum.UserInputType.MouseButton1 then
-                local mp=UserInputService:GetMouseLocation()
-                local pos=cont.AbsolutePosition; local sz=cont.AbsoluteSize
-                if mp.X<pos.X or mp.X>pos.X+sz.X or mp.Y<pos.Y or mp.Y>pos.Y+sz.Y then
-                    CloseDropdown()
-                end
+            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if justOpened then return end
+            if not open then return end
+            local mp = UserInputService:GetMouseLocation()
+            local top = cont.AbsolutePosition
+            local bottom = listScroll.AbsolutePosition + listScroll.AbsoluteSize
+            local left = top.X
+            local right = top.X + cont.AbsoluteSize.X
+            if mp.X < left or mp.X > right or mp.Y < top.Y or mp.Y > bottom.Y then
+                CloseDropdown()
+            end
+        end)
+
+        -- Prevent the open click from instantly re-firing the outside check
+        hdr.MouseButton1Down:Connect(function()
+            if not open then
+                justOpened = true
+                task.delay(0.05, function() justOpened = false end)
             end
         end)
 
@@ -517,10 +530,25 @@ local function BuildElements(sectionInner)
         end
 
         hdr.MouseButton1Click:Connect(function() if open then CloseDD() else OpenDD() end end)
+
+        local justOpenedM = false
         UserInputService.InputBegan:Connect(function(i)
-            if open and i.UserInputType==Enum.UserInputType.MouseButton1 then
-                local mp=UserInputService:GetMouseLocation(); local pos=cont.AbsolutePosition; local sz=cont.AbsoluteSize
-                if mp.X<pos.X or mp.X>pos.X+sz.X or mp.Y<pos.Y or mp.Y>pos.Y+sz.Y then CloseDD() end
+            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if justOpenedM then return end
+            if not open then return end
+            local mp = UserInputService:GetMouseLocation()
+            local top = cont.AbsolutePosition
+            local bottom = listScroll.AbsolutePosition + listScroll.AbsoluteSize
+            local right = top.X + cont.AbsoluteSize.X
+            if mp.X < top.X or mp.X > right or mp.Y < top.Y or mp.Y > bottom.Y then
+                CloseDD()
+            end
+        end)
+
+        hdr.MouseButton1Down:Connect(function()
+            if not open then
+                justOpenedM = true
+                task.delay(0.05, function() justOpenedM = false end)
             end
         end)
 
