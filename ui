@@ -392,10 +392,17 @@ function FiberLib:AddTab(name, icon)
     local pageLayout = Instance.new("UIListLayout")
     pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
     pageLayout.FillDirection = Enum.FillDirection.Vertical
-    pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    pageLayout.VerticalAlignment = Enum.VerticalAlignment.Top
     pageLayout.Padding = UDim.new(0, 8)
     pageLayout.Parent = page
-    AddPadding(page, 8, 8, 8, 8)
+
+    local pagePad = Instance.new("UIPadding")
+    pagePad.PaddingTop    = UDim.new(0, 8)
+    pagePad.PaddingBottom = UDim.new(0, 8)
+    pagePad.PaddingLeft   = UDim.new(0, 10)
+    pagePad.PaddingRight  = UDim.new(0, 10)
+    pagePad.Parent = page
 
     tabData._button = btn
     tabData._btnLabel = btnLabel
@@ -434,7 +441,7 @@ function FiberLib:AddTab(name, icon)
         sectionFrame.BackgroundColor3 = Theme.Panel
         sectionFrame.BorderSizePixel = 0
         sectionFrame.AutomaticSize = Enum.AutomaticSize.Y
-        sectionFrame.Size = UDim2.new(1, -16, 0, 0)
+        sectionFrame.Size = UDim2.new(1, 0, 0, 0)
         sectionFrame.Parent = page
         AddCorner(sectionFrame, 8)
         AddStroke(sectionFrame, Theme.Border, 1)
