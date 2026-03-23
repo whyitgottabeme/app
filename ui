@@ -1,9 +1,9 @@
 --[[
     FiberUI - Lua UI Library
-    Mimics the Fiber.cc | Bronx Duels cheat menu style
-    Compatible with: Roblox (Drawing API), or any Lua env with a drawing layer
-    
-    Usage: local UI = loadstring(...)() or require("FiberUI")
+    Fiber.cc | Bronx Duels style menu
+
+    Compatible with Roblox exploits using the Drawing API.
+    Load with loadstring() or paste directly above your script.
 --]]
 
 local FiberUI = {}
@@ -13,174 +13,105 @@ FiberUI.__index = FiberUI
 --  THEME
 -- ─────────────────────────────────────────
 local Theme = {
-    Background      = Color3.fromRGB(20,  20,  24),
-    TitleBar        = Color3.fromRGB(28,  28,  36),
-    TabBar          = Color3.fromRGB(24,  24,  31),
-    TabActive       = Color3.fromRGB(91,  103, 247),
-    TabInactive     = Color3.fromRGB(85,  85,  85),
-    SectionLabel    = Color3.fromRGB(91,  103, 247),
-    SettingLabel    = Color3.fromRGB(176, 176, 192),
-    SettingMuted    = Color3.fromRGB(85,  85,  85),
-    ToggleOn        = Color3.fromRGB(91,  103, 247),
-    ToggleOff       = Color3.fromRGB(37,  37,  48),
-    SliderFill      = Color3.fromRGB(74,  85,  232),
-    SliderTrack     = Color3.fromRGB(37,  37,  48),
-    Divider         = Color3.fromRGB(34,  34,  40),
-    Border          = Color3.fromRGB(42,  42,  53),
-    Text            = Color3.fromRGB(200, 200, 216),
-    TextDim         = Color3.fromRGB(112, 112, 160),
-    Accent          = Color3.fromRGB(91,  103, 247),
-    White           = Color3.fromRGB(255, 255, 255),
+    Background   = Color3.fromRGB(20,  20,  24),
+    TitleBar     = Color3.fromRGB(28,  28,  36),
+    TabBar       = Color3.fromRGB(24,  24,  31),
+    TabActive    = Color3.fromRGB(91,  103, 247),
+    TabInactive  = Color3.fromRGB(85,  85,  85),
+    SectionLabel = Color3.fromRGB(91,  103, 247),
+    SettingLabel = Color3.fromRGB(176, 176, 192),
+    SettingMuted = Color3.fromRGB(85,  85,  85),
+    ToggleOn     = Color3.fromRGB(91,  103, 247),
+    ToggleOff    = Color3.fromRGB(37,  37,  48),
+    ToggleBorder = Color3.fromRGB(51,  51,  51),
+    SliderFill   = Color3.fromRGB(74,  85,  232),
+    SliderTrack  = Color3.fromRGB(37,  37,  48),
+    Divider      = Color3.fromRGB(34,  34,  40),
+    Border       = Color3.fromRGB(42,  42,  53),
+    TextDim      = Color3.fromRGB(112, 112, 160),
+    White        = Color3.fromRGB(255, 255, 255),
+    AccentBtn    = Color3.fromRGB(245, 166, 35),
+    CloseBtn     = Color3.fromRGB(231, 76,  60),
+    MaxBtn       = Color3.fromRGB(91,  155, 213),
 }
 
 -- ─────────────────────────────────────────
---  DRAWING HELPERS  (wraps Roblox Drawing)
+--  DRAWING HELPERS
 -- ─────────────────────────────────────────
-local Draw = {}
-
-function Draw.Rect(x, y, w, h, color, filled, thickness)
-    local obj = Drawing.new("Square")
-    obj.Position  = Vector2.new(x, y)
-    obj.Size      = Vector2.new(w, h)
-    obj.Color     = color or Theme.Background
-    obj.Filled    = filled ~= false
-    obj.Thickness = thickness or 1
-    obj.Visible   = true
-    return obj
+local function newRect(x, y, w, h, color, filled, thickness)
+    local o = Drawing.new("Square")
+    o.Position  = Vector2.new(x, y)
+    o.Size      = Vector2.new(w, h)
+    o.Color     = color or Theme.Background
+    o.Filled    = filled ~= false
+    o.Thickness = thickness or 1
+    o.Visible   = true
+    return o
 end
 
-function Draw.Text(x, y, text, color, size, bold)
-    local obj = Drawing.new("Text")
-    obj.Position = Vector2.new(x, y)
-    obj.Text     = tostring(text)
-    obj.Color    = color or Theme.Text
-    obj.Size     = size  or 13
-    obj.Bold     = bold  or false
-    obj.Visible  = true
-    return obj
+local function newText(x, y, text, color, size, bold)
+    local o = Drawing.new("Text")
+    o.Position = Vector2.new(x, y)
+    o.Text     = tostring(text)
+    o.Color    = color or Theme.White
+    o.Size     = size  or 13
+    o.Bold     = bold  or false
+    o.Visible  = true
+    return o
 end
 
-function Draw.Line(x1, y1, x2, y2, color, thickness)
-    local obj = Drawing.new("Line")
-    obj.From      = Vector2.new(x1, y1)
-    obj.To        = Vector2.new(x2, y2)
-    obj.Color     = color     or Theme.Divider
-    obj.Thickness = thickness or 1
-    obj.Visible   = true
-    return obj
-end
-
-function Draw.Circle(x, y, radius, color, filled, thickness)
-    local obj = Drawing.new("Circle")
-    obj.Position  = Vector2.new(x, y)
-    obj.Radius    = radius
-    obj.Color     = color or Theme.Accent
-    obj.Filled    = filled ~= false
-    obj.Thickness = thickness or 1
-    obj.Visible   = true
-    return obj
+local function newCircle(x, y, radius, color, filled, thickness)
+    local o = Drawing.new("Circle")
+    o.Position  = Vector2.new(x, y)
+    o.Radius    = radius
+    o.Color     = color or Theme.TabActive
+    o.Filled    = filled ~= false
+    o.Thickness = thickness or 1
+    o.Visible   = true
+    return o
 end
 
 -- ─────────────────────────────────────────
---  WINDOW
+--  CONSTRUCTOR
 -- ─────────────────────────────────────────
-
---[[
-    FiberUI.new(config) → window object
-
-    config = {
-        Title   = "Fiber.cc | Bronx Duels",
-        Version = "v1.0.0 alpha",
-        X       = 100,
-        Y       = 100,
-        Width   = 420,
-    }
---]]
 function FiberUI.new(config)
-    local self      = setmetatable({}, FiberUI)
-    self.title      = config.Title   or "FiberUI"
-    self.version    = config.Version or "v1.0.0"
-    self.x          = config.X       or 100
-    self.y          = config.Y       or 100
-    self.width      = config.Width   or 420
-    self.rowHeight  = 22
-    self.padX       = 14
-    self.objects    = {}   -- all Drawing objects (for cleanup)
-    self.tabs       = {}
-    self.activeTab  = nil
-    self.cursorY    = 0    -- tracks vertical draw position inside content area
-
-    -- heights
-    self.titleH  = 28
-    self.tabH    = 24
-    self.headerH = self.titleH + self.tabH
-
+    assert(type(config) == "table", "FiberUI.new() expects a config table")
+    local self     = setmetatable({}, FiberUI)
+    self.title     = config.Title   or "FiberUI"
+    self.version   = config.Version or "v1.0.0"
+    self.x         = config.X       or 100
+    self.y         = config.Y       or 100
+    self.width     = config.Width   or 340
+    self.rowH      = 22
+    self.padX      = 14
+    self.titleH    = 28
+    self.tabBarH   = 24
+    self.objects   = {}
+    self.tabs      = {}
+    self.activeTab = nil
     return self
 end
 
--- Internal: register a drawing object for later removal
+-- ─────────────────────────────────────────
+--  INTERNAL
+-- ─────────────────────────────────────────
 function FiberUI:_reg(obj)
     table.insert(self.objects, obj)
     return obj
 end
 
--- Remove all drawing objects
 function FiberUI:Destroy()
-    for _, obj in ipairs(self.objects) do
-        pcall(function() obj:Remove() end)
+    for _, o in ipairs(self.objects) do
+        pcall(function() o:Remove() end)
     end
     self.objects = {}
 end
 
 -- ─────────────────────────────────────────
---  RENDER TITLEBAR
--- ─────────────────────────────────────────
-function FiberUI:DrawTitleBar()
-    local x, y, w = self.x, self.y, self.width
-
-    -- background
-    self:_reg(Draw.Rect(x, y, w, self.titleH, Theme.TitleBar))
-    self:_reg(Draw.Rect(x, y + self.titleH - 1, w, 1, Theme.Border))
-
-    -- accent square (checkmark icon)
-    self:_reg(Draw.Rect(x + self.padX, y + 7, 14, 14, Theme.Accent))
-    self:_reg(Draw.Text(x + self.padX + 3, y + 8, "✓", Theme.White, 10, true))
-
-    -- title
-    self:_reg(Draw.Text(x + self.padX + 20, y + 8, self.title, Theme.Text, 13, true))
-
-    -- version
-    self:_reg(Draw.Text(x + self.padX + 20 + 130, y + 10, self.version, Theme.SettingMuted, 10))
-
-    -- window controls  ●  ●  ●
-    local btnColors = {
-        Color3.fromRGB(245,166,35),
-        Color3.fromRGB(91,155,213),
-        Color3.fromRGB(231,76,60),
-    }
-    for i, col in ipairs(btnColors) do
-        self:_reg(Draw.Circle(
-            x + w - self.padX - (3 - i) * 18,
-            y + self.titleH / 2,
-            5, col, true
-        ))
-    end
-end
-
--- ─────────────────────────────────────────
 --  TABS
 -- ─────────────────────────────────────────
-
---[[
-    window:AddTab(name) → tab object
-    Each tab holds its own list of sections/elements.
-    Call window:SetTab(name) to switch active tab.
---]]
 function FiberUI:AddTab(name)
-    local tab = {
-        name     = name,
-        elements = {},
-    }
+    local tab = { name = name, elements = {} }
     table.insert(self.tabs, tab)
     if not self.activeTab then
         self.activeTab = name
@@ -190,82 +121,37 @@ end
 
 function FiberUI:SetTab(name)
     self.activeTab = name
-    -- re-render is caller's responsibility (call :Render())
-end
-
-function FiberUI:DrawTabBar()
-    local x, y, w = self.x, self.y + self.titleH, self.width
-
-    self:_reg(Draw.Rect(x, y, w, self.tabH, Theme.TabBar))
-    self:_reg(Draw.Rect(x, y + self.tabH - 1, w, 1, Theme.Border))
-
-    local tx = x + self.padX
-    for _, tab in ipairs(self.tabs) do
-        local isActive = (tab.name == self.activeTab)
-        local color    = isActive and Theme.TabActive or Theme.TabInactive
-        local label    = Draw.Text(tx, y + 6, tab.name, color, 11, isActive)
-        self:_reg(label)
-
-        if isActive then
-            -- underline
-            local tw = #tab.name * 7
-            self:_reg(Draw.Rect(tx, y + self.tabH - 2, tw, 2, Theme.Accent))
-        end
-
-        tx = tx + #tab.name * 7 + 16
-    end
 end
 
 -- ─────────────────────────────────────────
---  CONTENT ELEMENTS
+--  ELEMENTS
 -- ─────────────────────────────────────────
-
--- Section heading (blue label row)
 function FiberUI:SectionLabel(tab, text)
     table.insert(tab.elements, { type = "section", text = text })
 end
 
--- Toggle row
---[[
-    window:Toggle(tab, config)
-    config = {
-        Label   = "Enabled",
-        Default = true,
-        Muted   = false,
-        Callback = function(state) end,
-    }
-    Returns a state getter: getValue()
---]]
+function FiberUI:Divider(tab)
+    table.insert(tab.elements, { type = "divider" })
+end
+
 function FiberUI:Toggle(tab, config)
-    local state = config.Default ~= false
-    local elem  = {
+    assert(type(config) == "table", "Toggle() expects a config table")
+    local elem = {
         type     = "toggle",
         label    = config.Label    or "Toggle",
         muted    = config.Muted    or false,
-        state    = state,
+        state    = config.Default  ~= false,
         callback = config.Callback or function() end,
     }
     table.insert(tab.elements, elem)
-    -- return a simple getter/setter
     return {
-        Get = function() return elem.state end,
-        Set = function(v) elem.state = v end,
+        Get = function()  return elem.state end,
+        Set = function(v) elem.state = v    end,
     }
 end
 
--- Slider row
---[[
-    window:Slider(tab, config)
-    config = {
-        Label    = "Max Distance",
-        Min      = 0,
-        Max      = 5000,
-        Default  = 3830,
-        Callback = function(value) end,
-    }
-    Returns { Get, Set }
---]]
 function FiberUI:Slider(tab, config)
+    assert(type(config) == "table", "Slider() expects a config table")
     local elem = {
         type     = "slider",
         label    = config.Label    or "Slider",
@@ -276,116 +162,118 @@ function FiberUI:Slider(tab, config)
     }
     table.insert(tab.elements, elem)
     return {
-        Get = function() return elem.value end,
-        Set = function(v)
-            elem.value = math.clamp(v, elem.min, elem.max)
-        end,
+        Get = function()  return elem.value end,
+        Set = function(v) elem.value = math.clamp(v, elem.min, elem.max) end,
     }
 end
 
--- Divider
-function FiberUI:Divider(tab)
-    table.insert(tab.elements, { type = "divider" })
-end
-
 -- ─────────────────────────────────────────
---  RENDER (draw everything)
+--  RENDER
 -- ─────────────────────────────────────────
 function FiberUI:Render()
-    self:Destroy()   -- clear previous frame
+    self:Destroy()
 
-    -- find active tab
-    local activeTabData = nil
+    local activeData = nil
     for _, t in ipairs(self.tabs) do
         if t.name == self.activeTab then
-            activeTabData = t
+            activeData = t
             break
         end
     end
 
-    -- calculate content height
+    -- measure content height
     local contentH = 10
-    if activeTabData then
-        for _, elem in ipairs(activeTabData.elements) do
-            if elem.type == "section" then
-                contentH = contentH + 22
-            elseif elem.type == "divider" then
-                contentH = contentH + 10
-            elseif elem.type == "slider" then
-                contentH = contentH + self.rowHeight + 14  -- row + slider track
-            else
-                contentH = contentH + self.rowHeight
+    if activeData then
+        for _, e in ipairs(activeData.elements) do
+            if     e.type == "section" then contentH = contentH + 22
+            elseif e.type == "divider" then contentH = contentH + 12
+            elseif e.type == "slider"  then contentH = contentH + self.rowH + 16
+            else                            contentH = contentH + self.rowH
             end
         end
     end
     contentH = contentH + 10
 
-    local totalH = self.headerH + contentH
+    local totalH = self.titleH + self.tabBarH + contentH
+    local x, y, w = self.x, self.y, self.width
+    local pad     = self.padX
 
-    -- outer panel
-    self:_reg(Draw.Rect(self.x, self.y, self.width, totalH, Theme.Background))
-    self:_reg(Draw.Rect(self.x, self.y, self.width, totalH, Theme.Border, false, 1))
+    -- panel
+    self:_reg(newRect(x, y, w, totalH, Theme.Background))
+    self:_reg(newRect(x, y, w, totalH, Theme.Border, false, 1))
 
-    self:DrawTitleBar()
-    self:DrawTabBar()
+    -- title bar
+    self:_reg(newRect(x, y, w, self.titleH, Theme.TitleBar))
+    self:_reg(newRect(x, y + self.titleH - 1, w, 1, Theme.Border))
+    self:_reg(newRect(x + pad, y + 7, 14, 14, Theme.TabActive))
+    self:_reg(newText(x + pad + 3, y + 8, "v", Theme.White, 10, true))
+    self:_reg(newText(x + pad + 18, y + 8, self.title, Theme.White, 13, true))
+    self:_reg(newText(x + pad + 18 + #self.title * 7, y + 10, "  " .. self.version, Theme.SettingMuted, 10, false))
 
-    -- content area
-    if not activeTabData then return end
+    local btnX = x + w - pad - 4
+    self:_reg(newCircle(btnX,      y + 14, 5, Theme.CloseBtn,  true))
+    self:_reg(newCircle(btnX - 16, y + 14, 5, Theme.MaxBtn,    true))
+    self:_reg(newCircle(btnX - 32, y + 14, 5, Theme.AccentBtn, true))
 
-    local cx  = self.x
-    local cy  = self.y + self.headerH + 10
-    local cw  = self.width
-    local pad = self.padX
+    -- tab bar
+    local tabY = y + self.titleH
+    self:_reg(newRect(x, tabY, w, self.tabBarH, Theme.TabBar))
+    self:_reg(newRect(x, tabY + self.tabBarH - 1, w, 1, Theme.Border))
 
-    for _, elem in ipairs(activeTabData.elements) do
+    local tx = x + pad
+    for _, tab in ipairs(self.tabs) do
+        local active = (tab.name == self.activeTab)
+        self:_reg(newText(tx, tabY + 6, tab.name, active and Theme.TabActive or Theme.TabInactive, 11, active))
+        if active then
+            self:_reg(newRect(tx, tabY + self.tabBarH - 2, #tab.name * 7, 2, Theme.TabActive))
+        end
+        tx = tx + #tab.name * 7 + 18
+    end
+
+    -- content
+    if not activeData then return end
+
+    local cy = y + self.titleH + self.tabBarH + 10
+
+    for _, elem in ipairs(activeData.elements) do
 
         if elem.type == "section" then
-            self:_reg(Draw.Text(cx + pad, cy + 3, string.upper(elem.text),
-                Theme.SectionLabel, 10, true))
+            self:_reg(newText(x + pad, cy + 3, string.upper(elem.text), Theme.SectionLabel, 10, true))
             cy = cy + 22
 
         elseif elem.type == "divider" then
-            self:_reg(Draw.Rect(cx + pad, cy + 4, cw - pad * 2, 1, Theme.Divider))
-            cy = cy + 10
+            self:_reg(newRect(x + pad, cy + 5, w - pad * 2, 1, Theme.Divider))
+            cy = cy + 12
 
         elseif elem.type == "toggle" then
-            local labelColor = elem.muted and Theme.SettingMuted or Theme.SettingLabel
-            self:_reg(Draw.Text(cx + pad, cy + 5, elem.label, labelColor, 11))
-
-            -- toggle box
-            local bx = cx + cw - pad - 16
-            local by = cy + 4
-            local bgColor = elem.state and Theme.ToggleOn or Theme.ToggleOff
-            self:_reg(Draw.Rect(bx, by, 16, 16, bgColor))
-            if elem.state then
-                self:_reg(Draw.Text(bx + 3, by + 2, "✓", Theme.White, 10, true))
+            local lc = elem.muted and Theme.SettingMuted or Theme.SettingLabel
+            self:_reg(newText(x + pad, cy + 5, elem.label, lc, 11, false))
+            local bx = x + w - pad - 16
+            local by = cy + 3
+            self:_reg(newRect(bx, by, 16, 16, elem.state and Theme.ToggleOn or Theme.ToggleOff))
+            if not elem.state then
+                self:_reg(newRect(bx, by, 16, 16, Theme.ToggleBorder, false, 1))
             end
-            cy = cy + self.rowHeight
+            if elem.state then
+                self:_reg(newText(bx + 3, by + 2, "v", Theme.White, 10, true))
+            end
+            cy = cy + self.rowH
 
         elseif elem.type == "slider" then
-            -- label + value
-            self:_reg(Draw.Text(cx + pad, cy + 5, elem.label, Theme.SettingLabel, 11))
-            self:_reg(Draw.Text(cx + cw - pad - 40, cy + 5,
-                tostring(math.floor(elem.value)), Theme.TextDim, 11))
-            cy = cy + self.rowHeight
+            self:_reg(newText(x + pad, cy + 5, elem.label, Theme.SettingLabel, 11, false))
+            self:_reg(newText(x + w - pad - 40, cy + 5, tostring(math.floor(elem.value)), Theme.TextDim, 11, false))
+            cy = cy + self.rowH
 
-            -- track
-            local trackX = cx + pad
-            local trackW = cw - pad * 2
-            local trackH = 4
-            self:_reg(Draw.Rect(trackX, cy, trackW, trackH, Theme.SliderTrack))
-
-            -- fill
-            local pct  = (elem.value - elem.min) / (elem.max - elem.min)
+            local trackX = x + pad
+            local trackW = w - pad * 2
+            self:_reg(newRect(trackX, cy, trackW, 4, Theme.SliderTrack))
+            local pct   = (elem.value - elem.min) / math.max(1, elem.max - elem.min)
             local fillW = math.max(0, math.floor(pct * trackW))
             if fillW > 0 then
-                self:_reg(Draw.Rect(trackX, cy, fillW, trackH, Theme.SliderFill))
+                self:_reg(newRect(trackX, cy, fillW, 4, Theme.SliderFill))
             end
-
-            -- thumb
-            self:_reg(Draw.Circle(trackX + fillW, cy + trackH / 2, 5, Theme.White, true))
-
-            cy = cy + 14
+            self:_reg(newCircle(trackX + fillW, cy + 2, 5, Theme.White, true))
+            cy = cy + 16
         end
     end
 end
