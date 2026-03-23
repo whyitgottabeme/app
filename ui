@@ -1,459 +1,782 @@
---[[
-════════════════════════════════════════════════
-    FiberUI  —  Fiber.cc style menu
-    • Auto-centered on screen
-    • Correct sizes for 1080p+
-    • Clickable toggles & tabs
-    • Draggable window
-════════════════════════════════════════════════
---]]
+-- FiberLib.lua
+-- A Fiber.cc-inspired UI Library for Roblox
+-- Usage: local Fiber = loadstring(game:HttpGet("YOUR_RAW_URL"))()
 
-local FiberUI = {}
-FiberUI.__index = FiberUI
+local FiberLib = {}
+FiberLib.__index = FiberLib
 
--- ───────────────────────────────────────────────
---  SERVICES
--- ───────────────────────────────────────────────
-local UIS      = game:GetService("UserInputService")
-local RunSvc   = game:GetService("RunService")
-local Camera   = workspace.CurrentCamera
+-- Services
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- ───────────────────────────────────────────────
---  THEME  (bigger, screen-resolution sizes)
--- ───────────────────────────────────────────────
-local T = {
-    Background   = Color3.fromRGB(20,  20,  24),
-    TitleBar     = Color3.fromRGB(28,  28,  36),
-    TabBar       = Color3.fromRGB(24,  24,  31),
-    TabActive    = Color3.fromRGB(91,  103, 247),
-    TabInactive  = Color3.fromRGB(85,  85,  85),
-    SectionLabel = Color3.fromRGB(91,  103, 247),
-    RowLabel     = Color3.fromRGB(176, 176, 192),
-    RowMuted     = Color3.fromRGB(85,  85,  85),
-    ToggleOn     = Color3.fromRGB(91,  103, 247),
-    ToggleOff    = Color3.fromRGB(37,  37,  48),
-    ToggleBorder = Color3.fromRGB(60,  60,  75),
-    SliderFill   = Color3.fromRGB(74,  85,  232),
-    SliderTrack  = Color3.fromRGB(37,  37,  48),
-    Divider      = Color3.fromRGB(40,  40,  50),
-    Border       = Color3.fromRGB(55,  55,  70),
-    ValueText    = Color3.fromRGB(120, 120, 160),
-    White        = Color3.fromRGB(255, 255, 255),
-    BtnClose     = Color3.fromRGB(231, 76,  60),
-    BtnMax       = Color3.fromRGB(91,  155, 213),
-    BtnMin       = Color3.fromRGB(245, 166, 35),
-    Hover        = Color3.fromRGB(30,  30,  40),
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Theme
+local Theme = {
+    Background     = Color3.fromRGB(18, 18, 22),
+    Sidebar        = Color3.fromRGB(22, 22, 28),
+    Panel          = Color3.fromRGB(26, 26, 32),
+    PanelAlt       = Color3.fromRGB(30, 30, 38),
+    Accent         = Color3.fromRGB(138, 43, 226),   -- purple
+    AccentDim      = Color3.fromRGB(90, 20, 160),
+    Text           = Color3.fromRGB(220, 220, 230),
+    TextDim        = Color3.fromRGB(130, 130, 150),
+    TextDisabled   = Color3.fromRGB(70, 70, 85),
+    ToggleOn       = Color3.fromRGB(138, 43, 226),
+    ToggleOff      = Color3.fromRGB(50, 50, 62),
+    ButtonHover    = Color3.fromRGB(45, 45, 58),
+    Border         = Color3.fromRGB(45, 45, 58),
+    SidebarActive  = Color3.fromRGB(138, 43, 226),
+    SliderFill     = Color3.fromRGB(138, 43, 226),
+    SliderBg       = Color3.fromRGB(45, 45, 58),
 }
 
--- ───────────────────────────────────────────────
---  SIZES  (tweak these if your resolution differs)
--- ───────────────────────────────────────────────
-local S = {
-    Width      = 460,
-    TitleH     = 42,
-    TabBarH    = 34,
-    RowH       = 30,
-    PadX       = 18,
-    FontSize   = 16,
-    SmallFont  = 14,
-    TitleFont  = 18,
-    SectionFont= 13,
-    ToggleSize = 20,
-    SliderH    = 6,
-    ThumbR     = 7,
-    BtnR       = 7,
-}
-
--- ───────────────────────────────────────────────
---  DRAWING WRAPPERS
--- ───────────────────────────────────────────────
-local function Rect(x, y, w, h, color, filled, thick)
-    local o = Drawing.new("Square")
-    o.Position  = Vector2.new(x, y)
-    o.Size      = Vector2.new(w, h)
-    o.Color     = color or T.Background
-    o.Filled    = filled ~= false
-    o.Thickness = thick or 1
-    o.Visible   = true
-    return o
+-- Utility: Tween helper
+local function Tween(obj, props, duration, style, dir)
+    local info = TweenInfo.new(duration or 0.15, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out)
+    TweenService:Create(obj, info, props):Play()
 end
 
-local function Txt(x, y, str, color, size, bold)
-    local o = Drawing.new("Text")
-    o.Position = Vector2.new(x, y)
-    o.Text     = tostring(str)
-    o.Color    = color or T.White
-    o.Size     = size  or S.FontSize
-    o.Bold     = bold  or false
-    o.Outline  = false
-    o.Visible  = true
-    return o
+-- Utility: Make draggable
+local function MakeDraggable(frame, handle)
+    handle = handle or frame
+    local dragging, dragInput, startPos, startFramePos
+
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            startPos = input.Position
+            startFramePos = frame.Position
+        end
+    end)
+
+    handle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - startPos
+            frame.Position = UDim2.new(
+                startFramePos.X.Scale,
+                startFramePos.X.Offset + delta.X,
+                startFramePos.Y.Scale,
+                startFramePos.Y.Offset + delta.Y
+            )
+        end
+    end)
 end
 
-local function Circ(x, y, r, color, filled, thick)
-    local o = Drawing.new("Circle")
-    o.Position  = Vector2.new(x, y)
-    o.Radius    = r
-    o.Color     = color or T.TabActive
-    o.Filled    = filled ~= false
-    o.Thickness = thick or 1
-    o.Visible   = true
-    return o
+-- Utility: Round corner helper
+local function AddCorner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 6)
+    c.Parent = parent
+    return c
 end
 
--- ───────────────────────────────────────────────
---  CONSTRUCTOR
--- ───────────────────────────────────────────────
-function FiberUI.new(cfg)
-    local self       = setmetatable({}, FiberUI)
-    self.title       = cfg.Title   or "FiberUI"
-    self.version     = cfg.Version or "v1.0.0"
-    self.width       = cfg.Width   or S.Width
-    self.objects     = {}
-    self.tabs        = {}
-    self.activeTab   = nil
-    self.connections = {}
-    self.dragging    = false
-    self.dragOffset  = Vector2.new(0, 0)
+local function AddPadding(parent, top, bottom, left, right)
+    local p = Instance.new("UIPadding")
+    p.PaddingTop    = UDim.new(0, top    or 6)
+    p.PaddingBottom = UDim.new(0, bottom or 6)
+    p.PaddingLeft   = UDim.new(0, left   or 8)
+    p.PaddingRight  = UDim.new(0, right  or 8)
+    p.Parent = parent
+    return p
+end
 
-    -- auto-center on screen
-    local vp = Camera.ViewportSize
-    self.x = math.floor(vp.X / 2 - self.width / 2)
-    self.y = math.floor(vp.Y / 2 - 300)
+local function AddStroke(parent, color, thickness)
+    local s = Instance.new("UIStroke")
+    s.Color = color or Theme.Border
+    s.Thickness = thickness or 1
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = parent
+    return s
+end
+
+local function Label(parent, text, size, color, weight)
+    local l = Instance.new("TextLabel")
+    l.Text = text or ""
+    l.TextSize = size or 13
+    l.TextColor3 = color or Theme.Text
+    l.Font = weight or Enum.Font.GothamMedium
+    l.BackgroundTransparency = 1
+    l.TextXAlignment = Enum.TextXAlignment.Left
+    l.Size = UDim2.new(1, 0, 0, size and size + 4 or 18)
+    l.Parent = parent
+    return l
+end
+
+------------------------------------------------------------------------
+-- WINDOW
+------------------------------------------------------------------------
+function FiberLib.new(title, subtitle)
+    local self = setmetatable({}, FiberLib)
+
+    self._tabs = {}
+    self._activeTab = nil
+
+    -- ScreenGui
+    local gui = Instance.new("ScreenGui")
+    gui.Name = "FiberLib"
+    gui.ResetOnSpawn = false
+    gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    gui.Parent = (syn and syn.protect_gui and syn.protect_gui(gui)) or LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Main frame
+    local main = Instance.new("Frame")
+    main.Name = "Main"
+    main.Size = UDim2.new(0, 720, 0, 480)
+    main.Position = UDim2.new(0.5, -360, 0.5, -240)
+    main.BackgroundColor3 = Theme.Background
+    main.BorderSizePixel = 0
+    main.Parent = gui
+    AddCorner(main, 10)
+    AddStroke(main, Theme.Border, 1)
+
+    -- Drop shadow (aesthetic)
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.Image = "rbxassetid://6014261993"
+    shadow.ImageColor3 = Color3.fromRGB(0,0,0)
+    shadow.ImageTransparency = 0.5
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(49,49,450,450)
+    shadow.Size = UDim2.new(1, 48, 1, 48)
+    shadow.Position = UDim2.new(0,-24,0,-24)
+    shadow.BackgroundTransparency = 1
+    shadow.ZIndex = 0
+    shadow.Parent = main
+
+    -- Sidebar
+    local sidebar = Instance.new("Frame")
+    sidebar.Name = "Sidebar"
+    sidebar.Size = UDim2.new(0, 140, 1, 0)
+    sidebar.BackgroundColor3 = Theme.Sidebar
+    sidebar.BorderSizePixel = 0
+    sidebar.Parent = main
+    AddCorner(sidebar, 10)
+
+    -- Sidebar right mask (remove right-side rounding)
+    local sidebarMask = Instance.new("Frame")
+    sidebarMask.Size = UDim2.new(0, 10, 1, 0)
+    sidebarMask.Position = UDim2.new(1, -10, 0, 0)
+    sidebarMask.BackgroundColor3 = Theme.Sidebar
+    sidebarMask.BorderSizePixel = 0
+    sidebarMask.Parent = sidebar
+
+    -- Logo / title area
+    local logoBar = Instance.new("Frame")
+    logoBar.Size = UDim2.new(1, 0, 0, 52)
+    logoBar.BackgroundTransparency = 1
+    logoBar.Parent = sidebar
+    AddPadding(logoBar, 10, 4, 10, 8)
+
+    local accentDot = Instance.new("Frame")
+    accentDot.Size = UDim2.new(0, 7, 0, 7)
+    accentDot.Position = UDim2.new(0, 10, 0, 22)
+    accentDot.BackgroundColor3 = Theme.Accent
+    accentDot.BorderSizePixel = 0
+    accentDot.Parent = sidebar
+    AddCorner(accentDot, 99)
+
+    local titleLabel = Instance.new("TextLabel")
+    titleLabel.Text = title or "Fiber"
+    titleLabel.TextSize = 15
+    titleLabel.Font = Enum.Font.GothamBold
+    titleLabel.TextColor3 = Theme.Text
+    titleLabel.BackgroundTransparency = 1
+    titleLabel.Size = UDim2.new(1, -20, 0, 18)
+    titleLabel.Position = UDim2.new(0, 22, 0, 15)
+    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.Parent = sidebar
+
+    local subLabel = Instance.new("TextLabel")
+    subLabel.Text = subtitle or "| discord.gg/fiber"
+    subLabel.TextSize = 10
+    subLabel.Font = Enum.Font.Gotham
+    subLabel.TextColor3 = Theme.TextDim
+    subLabel.BackgroundTransparency = 1
+    subLabel.Size = UDim2.new(1, -20, 0, 14)
+    subLabel.Position = UDim2.new(0, 22, 0, 33)
+    subLabel.TextXAlignment = Enum.TextXAlignment.Left
+    subLabel.Parent = sidebar
+
+    -- Sidebar divider
+    local divider = Instance.new("Frame")
+    divider.Size = UDim2.new(1, -20, 0, 1)
+    divider.Position = UDim2.new(0, 10, 0, 52)
+    divider.BackgroundColor3 = Theme.Border
+    divider.BorderSizePixel = 0
+    divider.Parent = sidebar
+
+    -- Sidebar tab list
+    local tabList = Instance.new("ScrollingFrame")
+    tabList.Name = "TabList"
+    tabList.Size = UDim2.new(1, 0, 1, -120)
+    tabList.Position = UDim2.new(0, 0, 0, 58)
+    tabList.BackgroundTransparency = 1
+    tabList.BorderSizePixel = 0
+    tabList.ScrollBarThickness = 0
+    tabList.CanvasSize = UDim2.new(0, 0, 0, 0)
+    tabList.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    tabList.Parent = sidebar
+
+    local tabListLayout = Instance.new("UIListLayout")
+    tabListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    tabListLayout.Padding = UDim.new(0, 2)
+    tabListLayout.Parent = tabList
+    AddPadding(tabList, 4, 4, 8, 8)
+
+    -- Bottom user badge
+    local userBadge = Instance.new("Frame")
+    userBadge.Size = UDim2.new(1, 0, 0, 44)
+    userBadge.Position = UDim2.new(0, 0, 1, -46)
+    userBadge.BackgroundTransparency = 1
+    userBadge.Parent = sidebar
+
+    local avatar = Instance.new("ImageLabel")
+    avatar.Size = UDim2.new(0, 28, 0, 28)
+    avatar.Position = UDim2.new(0, 10, 0.5, -14)
+    avatar.BackgroundColor3 = Theme.AccentDim
+    avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=48&h=48"
+    avatar.Parent = userBadge
+    AddCorner(avatar, 99)
+
+    local userNameLabel = Instance.new("TextLabel")
+    userNameLabel.Text = LocalPlayer.Name
+    userNameLabel.TextSize = 12
+    userNameLabel.Font = Enum.Font.GothamMedium
+    userNameLabel.TextColor3 = Theme.Text
+    userNameLabel.BackgroundTransparency = 1
+    userNameLabel.Size = UDim2.new(1, -50, 0, 14)
+    userNameLabel.Position = UDim2.new(0, 44, 0.5, -14)
+    userNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    userNameLabel.Parent = userBadge
+
+    local userTagLabel = Instance.new("TextLabel")
+    userTagLabel.Text = "@" .. LocalPlayer.Name
+    userTagLabel.TextSize = 10
+    userTagLabel.Font = Enum.Font.Gotham
+    userTagLabel.TextColor3 = Theme.TextDim
+    userTagLabel.BackgroundTransparency = 1
+    userTagLabel.Size = UDim2.new(1, -50, 0, 12)
+    userTagLabel.Position = UDim2.new(0, 44, 0.5, 2)
+    userTagLabel.TextXAlignment = Enum.TextXAlignment.Left
+    userTagLabel.Parent = userBadge
+
+    -- Content area
+    local content = Instance.new("Frame")
+    content.Name = "Content"
+    content.Size = UDim2.new(1, -150, 1, -10)
+    content.Position = UDim2.new(0, 145, 0, 5)
+    content.BackgroundTransparency = 1
+    content.Parent = main
+
+    -- Window controls (top right)
+    local controls = Instance.new("Frame")
+    controls.Size = UDim2.new(0, 50, 0, 20)
+    controls.Position = UDim2.new(1, -58, 0, 8)
+    controls.BackgroundTransparency = 1
+    controls.Parent = main
+
+    local btnLayout = Instance.new("UIListLayout")
+    btnLayout.FillDirection = Enum.FillDirection.Horizontal
+    btnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    btnLayout.Padding = UDim.new(0, 4)
+    btnLayout.Parent = controls
+
+    local function WinBtn(color)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, 12, 0, 12)
+        b.BackgroundColor3 = color
+        b.Text = ""
+        b.BorderSizePixel = 0
+        b.Parent = controls
+        AddCorner(b, 99)
+        return b
+    end
+
+    local closeBtn = WinBtn(Color3.fromRGB(200, 60, 60))
+    local minBtn   = WinBtn(Color3.fromRGB(200, 160, 40))
+
+    closeBtn.MouseButton1Click:Connect(function()
+        Tween(main, {Size = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 1}, 0.2)
+        task.wait(0.2)
+        gui:Destroy()
+    end)
+
+    minBtn.MouseButton1Click:Connect(function()
+        local tabContent = content
+        if tabContent.Visible then
+            Tween(main, {Size = UDim2.new(0, 140, 0, 480)}, 0.2)
+            tabContent.Visible = false
+        else
+            Tween(main, {Size = UDim2.new(0, 720, 0, 480)}, 0.2)
+            tabContent.Visible = true
+        end
+    end)
+
+    MakeDraggable(main, sidebar)
+
+    -- Store refs
+    self._gui = gui
+    self._main = main
+    self._sidebar = sidebar
+    self._tabList = tabList
+    self._content = content
 
     return self
 end
 
--- ───────────────────────────────────────────────
---  HELPERS
--- ───────────────────────────────────────────────
-function FiberUI:_reg(o)
-    table.insert(self.objects, o)
-    return o
-end
-
-function FiberUI:Destroy()
-    for _, o in ipairs(self.objects) do
-        pcall(function() o:Remove() end)
-    end
-    self.objects = {}
-    for _, c in ipairs(self.connections) do
-        c:Disconnect()
-    end
-    self.connections = {}
-end
-
-local function inBox(mx, my, x, y, w, h)
-    return mx >= x and mx <= x + w and my >= y and my <= y + h
-end
-
--- ───────────────────────────────────────────────
---  TABS
--- ───────────────────────────────────────────────
-function FiberUI:AddTab(name)
-    local tab = { name = name, elements = {} }
-    table.insert(self.tabs, tab)
-    if not self.activeTab then self.activeTab = name end
-    return tab
-end
-
-function FiberUI:SetTab(name)
-    self.activeTab = name
-    self:Render()
-end
-
--- ───────────────────────────────────────────────
---  ELEMENTS
--- ───────────────────────────────────────────────
-function FiberUI:SectionLabel(tab, text)
-    table.insert(tab.elements, { type = "section", text = text })
-end
-
-function FiberUI:Divider(tab)
-    table.insert(tab.elements, { type = "divider" })
-end
-
-function FiberUI:Toggle(tab, cfg)
-    local elem = {
-        type     = "toggle",
-        label    = cfg.Label    or "Toggle",
-        muted    = cfg.Muted    or false,
-        state    = cfg.Default  ~= false,
-        callback = cfg.Callback or function() end,
+------------------------------------------------------------------------
+-- TAB
+------------------------------------------------------------------------
+function FiberLib:AddTab(name, icon)
+    local tabData = {
+        name = name,
+        sections = {},
+        _button = nil,
+        _page = nil,
     }
-    table.insert(tab.elements, elem)
-    return {
-        Get = function()  return elem.state end,
-        Set = function(v) elem.state = v; self:Render() end,
-    }
-end
 
-function FiberUI:Slider(tab, cfg)
-    local elem = {
-        type     = "slider",
-        label    = cfg.Label    or "Slider",
-        min      = cfg.Min      or 0,
-        max      = cfg.Max      or 100,
-        value    = cfg.Default  or 50,
-        callback = cfg.Callback or function() end,
-        dragging = false,
-    }
-    table.insert(tab.elements, elem)
-    return {
-        Get = function()  return elem.value end,
-        Set = function(v)
-            elem.value = math.clamp(v, elem.min, elem.max)
-            self:Render()
-        end,
-    }
-end
+    -- Tab button in sidebar
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundColor3 = Theme.Panel
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.BorderSizePixel = 0
+    btn.Parent = self._tabList
+    AddCorner(btn, 6)
 
--- ───────────────────────────────────────────────
---  RENDER
--- ───────────────────────────────────────────────
-function FiberUI:Render()
-    self:Destroy()
+    local accentBar = Instance.new("Frame")
+    accentBar.Size = UDim2.new(0, 3, 0.6, 0)
+    accentBar.Position = UDim2.new(0, 0, 0.2, 0)
+    accentBar.BackgroundColor3 = Theme.Accent
+    accentBar.BackgroundTransparency = 1
+    accentBar.BorderSizePixel = 0
+    accentBar.Parent = btn
+    AddCorner(accentBar, 99)
 
-    -- find active tab
-    local activeData
-    for _, t in ipairs(self.tabs) do
-        if t.name == self.activeTab then activeData = t; break end
+    local btnLabel = Instance.new("TextLabel")
+    btnLabel.Text = (icon and icon .. "  " or "") .. name
+    btnLabel.TextSize = 13
+    btnLabel.Font = Enum.Font.GothamMedium
+    btnLabel.TextColor3 = Theme.TextDim
+    btnLabel.BackgroundTransparency = 1
+    btnLabel.Size = UDim2.new(1, -16, 1, 0)
+    btnLabel.Position = UDim2.new(0, 12, 0, 0)
+    btnLabel.TextXAlignment = Enum.TextXAlignment.Left
+    btnLabel.Parent = btn
+
+    -- Tab page (scrollable content)
+    local page = Instance.new("ScrollingFrame")
+    page.Name = name .. "_Page"
+    page.Size = UDim2.new(1, 0, 1, 0)
+    page.BackgroundTransparency = 1
+    page.BorderSizePixel = 0
+    page.ScrollBarThickness = 3
+    page.ScrollBarImageColor3 = Theme.Accent
+    page.CanvasSize = UDim2.new(0,0,0,0)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.Visible = false
+    page.Parent = self._content
+
+    local pageLayout = Instance.new("UIGridLayout")
+    pageLayout.CellSize = UDim2.new(0.48, -4, 0, 0)
+    pageLayout.CellPadding = UDim2.new(0.02, 4, 0, 8)
+    pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    pageLayout.FillDirection = Enum.FillDirection.Horizontal
+    pageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    pageLayout.Parent = page
+    AddPadding(page, 6, 6, 4, 4)
+
+    tabData._button = btn
+    tabData._btnLabel = btnLabel
+    tabData._accentBar = accentBar
+    tabData._page = page
+    tabData._layout = pageLayout
+
+    -- Switch tab on click
+    btn.MouseButton1Click:Connect(function()
+        self:_SelectTab(tabData)
+    end)
+
+    btn.MouseEnter:Connect(function()
+        if self._activeTab ~= tabData then
+            Tween(btn, {BackgroundTransparency = 0.7}, 0.1)
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if self._activeTab ~= tabData then
+            Tween(btn, {BackgroundTransparency = 1}, 0.1)
+        end
+    end)
+
+    table.insert(self._tabs, tabData)
+
+    if #self._tabs == 1 then
+        self:_SelectTab(tabData)
     end
 
-    -- measure height
-    local contentH = 12
-    if activeData then
-        for _, e in ipairs(activeData.elements) do
-            if     e.type == "section" then contentH = contentH + 28
-            elseif e.type == "divider" then contentH = contentH + 14
-            elseif e.type == "slider"  then contentH = contentH + S.RowH + 20
-            else                            contentH = contentH + S.RowH
+    -- Section builder
+    local sectionAPI = {}
+
+    function sectionAPI:AddSection(title)
+        local sectionFrame = Instance.new("Frame")
+        sectionFrame.Name = title or "Section"
+        sectionFrame.BackgroundColor3 = Theme.Panel
+        sectionFrame.BorderSizePixel = 0
+        sectionFrame.AutomaticSize = Enum.AutomaticSize.Y
+        sectionFrame.Size = UDim2.new(1, 0, 0, 0)
+        sectionFrame.Parent = page
+        AddCorner(sectionFrame, 8)
+        AddStroke(sectionFrame, Theme.Border, 1)
+
+        local sectionInner = Instance.new("Frame")
+        sectionInner.BackgroundTransparency = 1
+        sectionInner.Size = UDim2.new(1, 0, 1, 0)
+        sectionInner.AutomaticSize = Enum.AutomaticSize.Y
+        sectionInner.Parent = sectionFrame
+        AddPadding(sectionInner, 8, 8, 8, 8)
+
+        local innerLayout = Instance.new("UIListLayout")
+        innerLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        innerLayout.Padding = UDim.new(0, 4)
+        innerLayout.Parent = sectionInner
+
+        if title then
+            local sectionTitle = Instance.new("TextLabel")
+            sectionTitle.Text = title
+            sectionTitle.TextSize = 13
+            sectionTitle.Font = Enum.Font.GothamBold
+            sectionTitle.TextColor3 = Theme.Text
+            sectionTitle.BackgroundTransparency = 1
+            sectionTitle.Size = UDim2.new(1, 0, 0, 20)
+            sectionTitle.TextXAlignment = Enum.TextXAlignment.Center
+            sectionTitle.Parent = sectionInner
+
+            local titleUnder = Instance.new("Frame")
+            titleUnder.Size = UDim2.new(1, 0, 0, 1)
+            titleUnder.BackgroundColor3 = Theme.Border
+            titleUnder.BorderSizePixel = 0
+            titleUnder.Parent = sectionInner
+        end
+
+        local elemAPI = {}
+
+        -- TOGGLE
+        function elemAPI:AddToggle(label, default, callback)
+            local state = default or false
+
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, 0, 0, 28)
+            row.BackgroundColor3 = Theme.PanelAlt
+            row.BorderSizePixel = 0
+            row.Parent = sectionInner
+            AddCorner(row, 5)
+
+            local rowLabel = Label(row, label, 12, Theme.Text, Enum.Font.Gotham)
+            rowLabel.Position = UDim2.new(0, 10, 0.5, -9)
+            rowLabel.Size = UDim2.new(1, -48, 0, 18)
+
+            -- Toggle pill
+            local pill = Instance.new("Frame")
+            pill.Size = UDim2.new(0, 32, 0, 16)
+            pill.Position = UDim2.new(1, -42, 0.5, -8)
+            pill.BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff
+            pill.BorderSizePixel = 0
+            pill.Parent = row
+            AddCorner(pill, 99)
+
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.new(0, 10, 0, 10)
+            knob.Position = state and UDim2.new(1, -13, 0.5, -5) or UDim2.new(0, 3, 0.5, -5)
+            knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+            knob.BorderSizePixel = 0
+            knob.Parent = pill
+            AddCorner(knob, 99)
+
+            local clickArea = Instance.new("TextButton")
+            clickArea.Size = UDim2.new(1, 0, 1, 0)
+            clickArea.BackgroundTransparency = 1
+            clickArea.Text = ""
+            clickArea.Parent = row
+
+            clickArea.MouseButton1Click:Connect(function()
+                state = not state
+                Tween(pill, {BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff}, 0.15)
+                Tween(knob, {Position = state and UDim2.new(1,-13,0.5,-5) or UDim2.new(0,3,0.5,-5)}, 0.15)
+                if callback then callback(state) end
+            end)
+
+            local api = {}
+            function api:Set(val)
+                state = val
+                Tween(pill, {BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff}, 0.15)
+                Tween(knob, {Position = state and UDim2.new(1,-13,0.5,-5) or UDim2.new(0,3,0.5,-5)}, 0.15)
             end
-        end
-    end
-    contentH = contentH + 12
-
-    local totalH = S.TitleH + S.TabBarH + contentH
-    local x, y, w = self.x, self.y, self.width
-    local pad     = S.PadX
-
-    -- ── Panel ──────────────────────────────────
-    self:_reg(Rect(x, y, w, totalH, T.Background))
-    self:_reg(Rect(x, y, w, totalH, T.Border, false, 1))
-
-    -- ── Title bar ──────────────────────────────
-    self:_reg(Rect(x, y, w, S.TitleH, T.TitleBar))
-    self:_reg(Rect(x, y + S.TitleH - 1, w, 1, T.Border))
-
-    -- accent box + checkmark
-    self:_reg(Rect(x + pad, y + 11, 18, 18, T.TabActive))
-    self:_reg(Txt(x + pad + 4, y + 12, "v", T.White, 13, true))
-
-    -- title
-    self:_reg(Txt(x + pad + 24, y + 12, self.title, T.White, S.TitleFont, true))
-
-    -- version
-    self:_reg(Txt(x + pad + 24 + #self.title * 10, y + 15, "  " .. self.version, T.RowMuted, S.SmallFont))
-
-    -- window buttons (right side)
-    local bx = x + w - pad - S.BtnR
-    self:_reg(Circ(bx,          y + S.TitleH/2, S.BtnR, T.BtnClose, true))
-    self:_reg(Circ(bx - 20,     y + S.TitleH/2, S.BtnR, T.BtnMax,   true))
-    self:_reg(Circ(bx - 40,     y + S.TitleH/2, S.BtnR, T.BtnMin,   true))
-
-    -- ── Tab bar ────────────────────────────────
-    local tabY = y + S.TitleH
-    self:_reg(Rect(x, tabY, w, S.TabBarH, T.TabBar))
-    self:_reg(Rect(x, tabY + S.TabBarH - 1, w, 1, T.Border))
-
-    -- store tab click zones
-    self._tabZones = {}
-    local tx = x + pad
-    for _, tab in ipairs(self.tabs) do
-        local active   = (tab.name == self.activeTab)
-        local col      = active and T.TabActive or T.TabInactive
-        local labelW   = #tab.name * 9 + 4
-        self:_reg(Txt(tx, tabY + 9, tab.name, col, S.FontSize, active))
-        if active then
-            self:_reg(Rect(tx, tabY + S.TabBarH - 3, labelW, 3, T.TabActive))
-        end
-        table.insert(self._tabZones, { name = tab.name, x = tx, y = tabY, w = labelW, h = S.TabBarH })
-        tx = tx + labelW + 16
-    end
-
-    -- ── Content ────────────────────────────────
-    if not activeData then return end
-
-    -- store clickable zones for interactivity
-    self._clickZones = {}
-
-    local cy = y + S.TitleH + S.TabBarH + 12
-
-    for _, elem in ipairs(activeData.elements) do
-
-        if elem.type == "section" then
-            self:_reg(Txt(x + pad, cy + 4, string.upper(elem.text), T.SectionLabel, S.SectionFont, true))
-            cy = cy + 28
-
-        elseif elem.type == "divider" then
-            self:_reg(Rect(x + pad, cy + 6, w - pad * 2, 1, T.Divider))
-            cy = cy + 14
-
-        elseif elem.type == "toggle" then
-            -- hover bg (subtle)
-            local rowBg = self:_reg(Rect(x, cy, w, S.RowH, T.Background))
-            _ = rowBg
-
-            local lc = elem.muted and T.RowMuted or T.RowLabel
-            self:_reg(Txt(x + pad, cy + 7, elem.label, lc, S.FontSize))
-
-            -- toggle box
-            local bx2 = x + w - pad - S.ToggleSize
-            local by2 = cy + (S.RowH - S.ToggleSize) / 2
-            local bg   = elem.state and T.ToggleOn or T.ToggleOff
-            self:_reg(Rect(bx2, by2, S.ToggleSize, S.ToggleSize, bg))
-            self:_reg(Rect(bx2, by2, S.ToggleSize, S.ToggleSize, T.ToggleBorder, false, 1))
-            if elem.state then
-                self:_reg(Txt(bx2 + 4, by2 + 3, "v", T.White, 13, true))
-            end
-
-            table.insert(self._clickZones, {
-                type = "toggle", elem = elem,
-                x = x, y = cy, w = w, h = S.RowH,
-            })
-            cy = cy + S.RowH
-
-        elseif elem.type == "slider" then
-            self:_reg(Txt(x + pad, cy + 7, elem.label, T.RowLabel, S.FontSize))
-            self:_reg(Txt(x + w - pad - 50, cy + 7, tostring(math.floor(elem.value)), T.ValueText, S.FontSize))
-            cy = cy + S.RowH
-
-            local trackX = x + pad
-            local trackW = w - pad * 2
-            local trackY = cy + 4
-            self:_reg(Rect(trackX, trackY, trackW, S.SliderH, T.SliderTrack))
-
-            local pct   = (elem.value - elem.min) / math.max(1, elem.max - elem.min)
-            local fillW = math.max(0, math.floor(pct * trackW))
-            if fillW > 0 then
-                self:_reg(Rect(trackX, trackY, fillW, S.SliderH, T.SliderFill))
-            end
-            -- thumb
-            self:_reg(Circ(trackX + fillW, trackY + S.SliderH/2, S.ThumbR, T.White, true))
-
-            table.insert(self._clickZones, {
-                type = "slider", elem = elem,
-                x = trackX, y = trackY - 8,
-                w = trackW, h = S.SliderH + 16,
-                trackX = trackX, trackW = trackW,
-            })
-            cy = cy + S.SliderH + 20
-        end
-    end
-
-    -- store title bar zone for dragging
-    self._titleZone = { x = x, y = y, w = w - 60, h = S.TitleH }
-    self._totalH    = totalH
-
-    -- ── Wire up input ──────────────────────────
-    self:_connectInput()
-end
-
--- ───────────────────────────────────────────────
---  INPUT
--- ───────────────────────────────────────────────
-function FiberUI:_connectInput()
-
-    local activeDragSlider = nil
-
-    -- InputBegan
-    local c1 = UIS.InputBegan:Connect(function(inp, gpe)
-        if gpe then return end
-        if inp.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-
-        local mx = inp.Position.X
-        local my = inp.Position.Y
-
-        -- close button
-        local bx = self.x + self.width - S.PadX - S.BtnR
-        if (Vector2.new(mx, my) - Vector2.new(bx, self.y + S.TitleH/2)).Magnitude <= S.BtnR + 2 then
-            self:Destroy()
-            return
+            function api:Get() return state end
+            return api
         end
 
-        -- tab clicks
-        if self._tabZones then
-            for _, tz in ipairs(self._tabZones) do
-                if inBox(mx, my, tz.x, tz.y, tz.w, tz.h) then
-                    self:SetTab(tz.name)
-                    return
+        -- BUTTON
+        function elemAPI:AddButton(label, callback)
+            local btn2 = Instance.new("TextButton")
+            btn2.Size = UDim2.new(1, 0, 0, 28)
+            btn2.BackgroundColor3 = Theme.PanelAlt
+            btn2.Text = label or "Button"
+            btn2.TextColor3 = Theme.Text
+            btn2.TextSize = 12
+            btn2.Font = Enum.Font.GothamMedium
+            btn2.BorderSizePixel = 0
+            btn2.Parent = sectionInner
+            AddCorner(btn2, 5)
+            AddStroke(btn2, Theme.Border, 1)
+
+            btn2.MouseEnter:Connect(function()
+                Tween(btn2, {BackgroundColor3 = Theme.ButtonHover}, 0.1)
+            end)
+            btn2.MouseLeave:Connect(function()
+                Tween(btn2, {BackgroundColor3 = Theme.PanelAlt}, 0.1)
+            end)
+            btn2.MouseButton1Click:Connect(function()
+                Tween(btn2, {BackgroundColor3 = Theme.AccentDim}, 0.05)
+                task.wait(0.1)
+                Tween(btn2, {BackgroundColor3 = Theme.PanelAlt}, 0.1)
+                if callback then callback() end
+            end)
+
+            return btn2
+        end
+
+        -- SLIDER
+        function elemAPI:AddSlider(label, min, max, default, callback)
+            min = min or 0
+            max = max or 100
+            local value = math.clamp(default or min, min, max)
+
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 40)
+            container.BackgroundColor3 = Theme.PanelAlt
+            container.BorderSizePixel = 0
+            container.Parent = sectionInner
+            AddCorner(container, 5)
+
+            local topRow = Instance.new("Frame")
+            topRow.Size = UDim2.new(1, -16, 0, 18)
+            topRow.Position = UDim2.new(0, 8, 0, 5)
+            topRow.BackgroundTransparency = 1
+            topRow.Parent = container
+
+            local lbl = Label(topRow, label, 12, Theme.Text, Enum.Font.Gotham)
+            lbl.Size = UDim2.new(0.7, 0, 1, 0)
+
+            local valLabel = Label(topRow, tostring(value), 11, Theme.TextDim, Enum.Font.Gotham)
+            valLabel.Size = UDim2.new(0.3, 0, 1, 0)
+            valLabel.Position = UDim2.new(0.7, 0, 0, 0)
+            valLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+            local track = Instance.new("Frame")
+            track.Size = UDim2.new(1, -16, 0, 6)
+            track.Position = UDim2.new(0, 8, 1, -14)
+            track.BackgroundColor3 = Theme.SliderBg
+            track.BorderSizePixel = 0
+            track.Parent = container
+            AddCorner(track, 99)
+
+            local fill = Instance.new("Frame")
+            fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
+            fill.BackgroundColor3 = Theme.SliderFill
+            fill.BorderSizePixel = 0
+            fill.Parent = track
+            AddCorner(fill, 99)
+
+            local hitbox = Instance.new("TextButton")
+            hitbox.Size = UDim2.new(1, 0, 1, 0)
+            hitbox.BackgroundTransparency = 1
+            hitbox.Text = ""
+            hitbox.Parent = track
+
+            local draggingSlider = false
+            hitbox.MouseButton1Down:Connect(function()
+                draggingSlider = true
+            end)
+            UserInputService.InputEnded:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSlider = false
                 end
-            end
-        end
-
-        -- toggles & sliders
-        if self._clickZones then
-            for _, zone in ipairs(self._clickZones) do
-                if inBox(mx, my, zone.x, zone.y, zone.w, zone.h) then
-                    if zone.type == "toggle" then
-                        zone.elem.state = not zone.elem.state
-                        pcall(zone.elem.callback, zone.elem.state)
-                        self:Render()
-                        return
-                    elseif zone.type == "slider" then
-                        activeDragSlider = zone
-                        local pct = math.clamp((mx - zone.trackX) / zone.trackW, 0, 1)
-                        zone.elem.value = zone.elem.min + pct * (zone.elem.max - zone.elem.min)
-                        pcall(zone.elem.callback, zone.elem.value)
-                        self:Render()
-                        return
-                    end
+            end)
+            RunService.RenderStepped:Connect(function()
+                if draggingSlider then
+                    local pos = UserInputService:GetMouseLocation()
+                    local trackPos = track.AbsolutePosition
+                    local trackSize = track.AbsoluteSize
+                    local rel = math.clamp((pos.X - trackPos.X) / trackSize.X, 0, 1)
+                    value = math.floor(min + rel * (max - min))
+                    valLabel.Text = tostring(value)
+                    Tween(fill, {Size = UDim2.new(rel, 0, 1, 0)}, 0.05)
+                    if callback then callback(value) end
                 end
+            end)
+
+            local api = {}
+            function api:Set(v)
+                value = math.clamp(v, min, max)
+                local rel = (value - min) / (max - min)
+                Tween(fill, {Size = UDim2.new(rel, 0, 1, 0)}, 0.1)
+                valLabel.Text = tostring(value)
             end
+            function api:Get() return value end
+            return api
         end
 
-        -- title bar drag
-        if self._titleZone and inBox(mx, my, self._titleZone.x, self._titleZone.y, self._titleZone.w, self._titleZone.h) then
-            self.dragging   = true
-            self.dragOffset = Vector2.new(mx - self.x, my - self.y)
-        end
-    end)
-
-    -- InputChanged (drag)
-    local c2 = UIS.InputChanged:Connect(function(inp)
-        if inp.UserInputType ~= Enum.UserInputType.MouseMovement then return end
-        local mx = inp.Position.X
-        local my = inp.Position.Y
-
-        -- slider drag
-        if activeDragSlider then
-            local zone = activeDragSlider
-            local pct  = math.clamp((mx - zone.trackX) / zone.trackW, 0, 1)
-            zone.elem.value = zone.elem.min + pct * (zone.elem.max - zone.elem.min)
-            pcall(zone.elem.callback, zone.elem.value)
-            self:Render()
-            return
+        -- LABEL (info text)
+        function elemAPI:AddLabel(text, color)
+            local l = Instance.new("TextLabel")
+            l.Text = text or ""
+            l.TextSize = 11
+            l.Font = Enum.Font.Gotham
+            l.TextColor3 = color or Theme.TextDim
+            l.BackgroundTransparency = 1
+            l.Size = UDim2.new(1, 0, 0, 16)
+            l.TextXAlignment = Enum.TextXAlignment.Center
+            l.Parent = sectionInner
+            return l
         end
 
-        -- window drag
-        if self.dragging then
-            self.x = math.floor(mx - self.dragOffset.X)
-            self.y = math.floor(my - self.dragOffset.Y)
-            self:Render()
+        -- SEPARATOR
+        function elemAPI:AddSeparator()
+            local sep = Instance.new("Frame")
+            sep.Size = UDim2.new(1, 0, 0, 1)
+            sep.BackgroundColor3 = Theme.Border
+            sep.BorderSizePixel = 0
+            sep.Parent = sectionInner
         end
-    end)
 
-    -- InputEnded
-    local c3 = UIS.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
-            self.dragging    = false
-            activeDragSlider = nil
+        -- DROPDOWN
+        function elemAPI:AddDropdown(label, options, default, callback)
+            local selected = default or (options and options[1]) or ""
+            local open = false
+
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 28)
+            container.BackgroundColor3 = Theme.PanelAlt
+            container.BorderSizePixel = 0
+            container.ClipsDescendants = false
+            container.Parent = sectionInner
+            AddCorner(container, 5)
+
+            local header = Instance.new("TextButton")
+            header.Size = UDim2.new(1, 0, 0, 28)
+            header.BackgroundTransparency = 1
+            header.Text = ""
+            header.Parent = container
+
+            local headerLabel = Label(header, label .. ": " .. selected, 12, Theme.Text, Enum.Font.Gotham)
+            headerLabel.Position = UDim2.new(0, 10, 0.5, -9)
+            headerLabel.Size = UDim2.new(1, -36, 0, 18)
+
+            local arrow = Label(header, "▾", 13, Theme.TextDim, Enum.Font.GothamBold)
+            arrow.Position = UDim2.new(1, -22, 0.5, -9)
+            arrow.Size = UDim2.new(0, 18, 0, 18)
+            arrow.TextXAlignment = Enum.TextXAlignment.Center
+
+            local dropdown = Instance.new("Frame")
+            dropdown.Size = UDim2.new(1, 0, 0, 0)
+            dropdown.Position = UDim2.new(0, 0, 1, 2)
+            dropdown.BackgroundColor3 = Theme.Panel
+            dropdown.BorderSizePixel = 0
+            dropdown.Visible = false
+            dropdown.ZIndex = 10
+            dropdown.Parent = container
+            AddCorner(dropdown, 6)
+            AddStroke(dropdown, Theme.Border, 1)
+
+            local dropLayout = Instance.new("UIListLayout")
+            dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            dropLayout.Parent = dropdown
+            AddPadding(dropdown, 4, 4, 4, 4)
+
+            for _, opt in ipairs(options or {}) do
+                local optBtn = Instance.new("TextButton")
+                optBtn.Size = UDim2.new(1, 0, 0, 24)
+                optBtn.BackgroundTransparency = 1
+                optBtn.Text = opt
+                optBtn.TextColor3 = Theme.TextDim
+                optBtn.TextSize = 12
+                optBtn.Font = Enum.Font.Gotham
+                optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                optBtn.ZIndex = 11
+                optBtn.Parent = dropdown
+                AddPadding(optBtn, 0, 0, 6, 0)
+
+                optBtn.MouseEnter:Connect(function()
+                    Tween(optBtn, {TextColor3 = Theme.Text}, 0.1)
+                end)
+                optBtn.MouseLeave:Connect(function()
+                    Tween(optBtn, {TextColor3 = Theme.TextDim}, 0.1)
+                end)
+                optBtn.MouseButton1Click:Connect(function()
+                    selected = opt
+                    headerLabel.Text = label .. ": " .. selected
+                    open = false
+                    dropdown.Visible = false
+                    container.Size = UDim2.new(1, 0, 0, 28)
+                    if callback then callback(selected) end
+                end)
+            end
+
+            header.MouseButton1Click:Connect(function()
+                open = not open
+                dropdown.Visible = open
+                local numOpts = #(options or {})
+                if open then
+                    dropdown.Size = UDim2.new(1, 0, 0, numOpts * 24 + 8)
+                    container.Size = UDim2.new(1, 0, 0, 28 + numOpts * 24 + 10)
+                else
+                    container.Size = UDim2.new(1, 0, 0, 28)
+                end
+            end)
+
+            local api = {}
+            function api:Get() return selected end
+            function api:Set(v)
+                selected = v
+                headerLabel.Text = label .. ": " .. selected
+                if callback then callback(selected) end
+            end
+            return api
         end
-    end)
 
-    table.insert(self.connections, c1)
-    table.insert(self.connections, c2)
-    table.insert(self.connections, c3)
+        return elemAPI
+    end
+
+    return sectionAPI
 end
 
-return FiberUI
+------------------------------------------------------------------------
+-- Internal: Select Tab
+------------------------------------------------------------------------
+function FiberLib:_SelectTab(tabData)
+    if self._activeTab then
+        self._activeTab._page.Visible = false
+        Tween(self._activeTab._button, {BackgroundTransparency = 1}, 0.15)
+        Tween(self._activeTab._btnLabel, {TextColor3 = Theme.TextDim}, 0.15)
+        Tween(self._activeTab._accentBar, {BackgroundTransparency = 1}, 0.15)
+    end
+    self._activeTab = tabData
+    tabData._page.Visible = true
+    Tween(tabData._button, {BackgroundColor3 = Theme.PanelAlt, BackgroundTransparency = 0}, 0.15)
+    Tween(tabData._btnLabel, {TextColor3 = Theme.Text}, 0.15)
+    Tween(tabData._accentBar, {BackgroundTransparency = 0}, 0.15)
+end
+
+return FiberLib
