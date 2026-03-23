@@ -232,203 +232,159 @@ local function BuildElements(sectionInner)
         local s=Instance.new("Frame"); s.Size=UDim2.new(1,0,0,1); s.BackgroundColor3=Theme.Border; s.BorderSizePixel=0; s.Parent=sectionInner; T(s,"BackgroundColor3","Border")
     end
 
-    -- DROPDOWN  (single-select, animated, scrollable, searchable)
+    -- DROPDOWN  (single-select, clean, no search)
     function api:AddDropdown(label, options, default, callback)
         options = options or {}
         local selected = default or options[1] or ""
         local open = false
-        local MAX_VISIBLE = 5  -- items before scroll kicks in
+        local MAX_VISIBLE = 5
         local ITEM_H = 26
 
-        -- Wrapper — grows when open
+        -- Outer wrapper
         local cont = Instance.new("Frame")
-        cont.Size = UDim2.new(1,0,0,30)
-        cont.BackgroundColor3 = Theme.PanelAlt
-        cont.BorderSizePixel = 0
-        cont.ClipsDescendants = false
-        cont.Parent = sectionInner
-        Corner(cont,6)
-        local cs = Stroke(cont,Theme.Border,1); T(cont,"BackgroundColor3","PanelAlt"); T(cs,"Color","Border")
+        cont.Size=UDim2.new(1,0,0,30); cont.BackgroundColor3=Theme.PanelAlt
+        cont.BorderSizePixel=0; cont.ClipsDescendants=false; cont.Parent=sectionInner
+        Corner(cont,6); local cs=Stroke(cont,Theme.Border,1)
+        T(cont,"BackgroundColor3","PanelAlt"); T(cs,"Color","Border")
 
-        -- Header row
-        local hdr = Instance.new("TextButton")
-        hdr.Size = UDim2.new(1,0,0,30); hdr.BackgroundTransparency=1; hdr.Text=""; hdr.Parent=cont
+        -- Header button
+        local hdr=Instance.new("TextButton"); hdr.Size=UDim2.new(1,0,0,30)
+        hdr.BackgroundTransparency=1; hdr.Text=""; hdr.Parent=cont
 
-        -- Label text
-        local labelLbl = Instance.new("TextLabel")
-        labelLbl.Text = label; labelLbl.TextSize=11; labelLbl.Font=Enum.Font.Gotham
-        labelLbl.TextColor3=Theme.TextDim; labelLbl.BackgroundTransparency=1
-        labelLbl.Size=UDim2.new(0,0,0,30); labelLbl.AutomaticSize=Enum.AutomaticSize.X
+        local labelLbl=Instance.new("TextLabel"); labelLbl.Text=label; labelLbl.TextSize=11
+        labelLbl.Font=Enum.Font.Gotham; labelLbl.TextColor3=Theme.TextDim
+        labelLbl.BackgroundTransparency=1; labelLbl.Size=UDim2.new(0.45,0,1,0)
         labelLbl.Position=UDim2.new(0,10,0,0); labelLbl.TextXAlignment=Enum.TextXAlignment.Left
         labelLbl.Parent=hdr; T(labelLbl,"TextColor3","TextDim")
 
-        -- Selected value text
-        local valLbl = Instance.new("TextLabel")
-        valLbl.Text = selected; valLbl.TextSize=12; valLbl.Font=Enum.Font.GothamMedium
-        valLbl.TextColor3=Theme.Text; valLbl.BackgroundTransparency=1
-        valLbl.Size=UDim2.new(1,-52,0,30); valLbl.Position=UDim2.new(0,10,0,0)
-        valLbl.TextXAlignment=Enum.TextXAlignment.Right; valLbl.Parent=hdr
-        T(valLbl,"TextColor3","Text")
+        local valLbl=Instance.new("TextLabel"); valLbl.Text=selected; valLbl.TextSize=12
+        valLbl.Font=Enum.Font.GothamMedium; valLbl.TextColor3=Theme.Text
+        valLbl.BackgroundTransparency=1; valLbl.Size=UDim2.new(1,-52,1,0)
+        valLbl.Position=UDim2.new(0,10,0,0); valLbl.TextXAlignment=Enum.TextXAlignment.Right
+        valLbl.Parent=hdr; T(valLbl,"TextColor3","Text")
 
-        -- Arrow icon
-        local arrow = Instance.new("TextLabel")
-        arrow.Text="▾"; arrow.TextSize=14; arrow.Font=Enum.Font.GothamBold
-        arrow.TextColor3=Theme.TextDim; arrow.BackgroundTransparency=1
-        arrow.Size=UDim2.new(0,24,0,30); arrow.Position=UDim2.new(1,-28,0,0)
-        arrow.TextXAlignment=Enum.TextXAlignment.Center; arrow.Parent=hdr
-        T(arrow,"TextColor3","TextDim")
+        local arrow=Instance.new("TextLabel"); arrow.Text="▾"; arrow.TextSize=14
+        arrow.Font=Enum.Font.GothamBold; arrow.TextColor3=Theme.TextDim
+        arrow.BackgroundTransparency=1; arrow.Size=UDim2.new(0,24,1,0)
+        arrow.Position=UDim2.new(1,-28,0,0); arrow.TextXAlignment=Enum.TextXAlignment.Center
+        arrow.Parent=hdr; T(arrow,"TextColor3","TextDim")
 
-        -- Divider between header and list
-        local divLine = Instance.new("Frame")
-        divLine.Size=UDim2.new(1,-16,0,1); divLine.Position=UDim2.new(0,8,0,30)
-        divLine.BackgroundColor3=Theme.Border; divLine.BorderSizePixel=0
-        divLine.BackgroundTransparency=1; divLine.Parent=cont
+        -- Divider
+        local divLine=Instance.new("Frame"); divLine.Size=UDim2.new(1,-16,0,1)
+        divLine.Position=UDim2.new(0,8,0,30); divLine.BackgroundColor3=Theme.Border
+        divLine.BorderSizePixel=0; divLine.BackgroundTransparency=1; divLine.Parent=cont
         T(divLine,"BackgroundColor3","Border")
 
-        -- Search box
-        local searchFrame = Instance.new("Frame")
-        searchFrame.Size=UDim2.new(1,-12,0,24); searchFrame.Position=UDim2.new(0,6,0,36)
-        searchFrame.BackgroundColor3=Theme.Background; searchFrame.BorderSizePixel=0
-        searchFrame.BackgroundTransparency=1; searchFrame.Parent=cont
-        Corner(searchFrame,4)
-        local searchStroke=Stroke(searchFrame,Theme.Border,1)
-        searchStroke.Transparency=1
-        T(searchFrame,"BackgroundColor3","Background"); T(searchStroke,"Color","Border")
-
-        local searchBox = Instance.new("TextBox")
-        searchBox.Size=UDim2.new(1,-8,1,0); searchBox.Position=UDim2.new(0,6,0,0)
-        searchBox.BackgroundTransparency=1; searchBox.Text=""
-        searchBox.PlaceholderText="Search..."; searchBox.TextColor3=Theme.Text
-        searchBox.PlaceholderColor3=Theme.TextDim; searchBox.TextSize=11
-        searchBox.Font=Enum.Font.Gotham; searchBox.TextXAlignment=Enum.TextXAlignment.Left
-        searchBox.ClearTextOnFocus=false; searchBox.Parent=searchFrame
-        T(searchBox,"TextColor3","Text"); T(searchBox,"PlaceholderColor3","TextDim")
-
-        -- Scrolling list
-        local listScroll = Instance.new("ScrollingFrame")
-        listScroll.Size=UDim2.new(1,-12,0,0); listScroll.Position=UDim2.new(0,6,0,66)
+        -- Scrollable list (no search)
+        local listScroll=Instance.new("ScrollingFrame")
+        listScroll.Size=UDim2.new(1,-12,0,0); listScroll.Position=UDim2.new(0,6,0,36)
         listScroll.BackgroundTransparency=1; listScroll.BorderSizePixel=0
         listScroll.ScrollBarThickness=3; listScroll.ScrollBarImageColor3=Theme.Accent
         listScroll.CanvasSize=UDim2.new(0,0,0,0); listScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y
-        listScroll.BackgroundTransparency=1; listScroll.Parent=cont
-        T(listScroll,"ScrollBarImageColor3","Accent")
+        listScroll.Parent=cont; T(listScroll,"ScrollBarImageColor3","Accent")
 
-        local listLayout = Instance.new("UIListLayout")
+        local listLayout=Instance.new("UIListLayout")
         listLayout.SortOrder=Enum.SortOrder.LayoutOrder; listLayout.Padding=UDim.new(0,2); listLayout.Parent=listScroll
 
-        -- Declare before BuildList so rows created on first call can reference it
+        -- clickedInside flag — must be declared before BuildList
         local clickedInside = false
 
-        -- Build option rows
-        local optionBtns = {}
-        local function BuildList(filter)
+        local function BuildList()
             for _,c in ipairs(listScroll:GetChildren()) do
                 if not c:IsA("UIListLayout") then c:Destroy() end
             end
-            optionBtns = {}
             for _,opt in ipairs(options) do
-                if filter=="" or opt:lower():find(filter:lower(),1,true) then
-                    local row = Instance.new("TextButton")
-                    row.Size=UDim2.new(1,0,0,ITEM_H); row.BackgroundColor3=Theme.PanelAlt
-                    row.BackgroundTransparency = (opt==selected) and 0 or 1
-                    row.Text=""; row.BorderSizePixel=0; row.Parent=listScroll
-                    Corner(row,4)
-                    T(row,"BackgroundColor3","PanelAlt")
+                local isSelected = (opt == selected)
+                local row=Instance.new("TextButton"); row.Size=UDim2.new(1,0,0,ITEM_H)
+                row.BackgroundColor3=Theme.PanelAlt; row.BackgroundTransparency=isSelected and 0 or 1
+                row.Text=""; row.BorderSizePixel=0; row.Parent=listScroll; Corner(row,4)
+                T(row,"BackgroundColor3","PanelAlt")
 
-                    -- Accent left bar for selected
-                    local selBar=Instance.new("Frame"); selBar.Size=UDim2.new(0,3,0.6,0); selBar.Position=UDim2.new(0,0,0.2,0)
-                    selBar.BackgroundColor3=Theme.Accent; selBar.BackgroundTransparency=(opt==selected) and 0 or 1
-                    selBar.BorderSizePixel=0; selBar.Parent=row; Corner(selBar,99); T(selBar,"BackgroundColor3","Accent")
+                local selBar=Instance.new("Frame"); selBar.Size=UDim2.new(0,3,0.6,0)
+                selBar.Position=UDim2.new(0,0,0.2,0); selBar.BackgroundColor3=Theme.Accent
+                selBar.BackgroundTransparency=isSelected and 0 or 1; selBar.BorderSizePixel=0
+                selBar.Parent=row; Corner(selBar,99); T(selBar,"BackgroundColor3","Accent")
 
-                    local optLbl=Instance.new("TextLabel"); optLbl.Text=opt; optLbl.TextSize=12
-                    optLbl.Font=(opt==selected) and Enum.Font.GothamMedium or Enum.Font.Gotham
-                    optLbl.TextColor3=(opt==selected) and Theme.Text or Theme.TextDim
-                    optLbl.BackgroundTransparency=1; optLbl.Size=UDim2.new(1,-16,1,0)
-                    optLbl.Position=UDim2.new(0,10,0,0); optLbl.TextXAlignment=Enum.TextXAlignment.Left; optLbl.Parent=row
-                    T(optLbl,"TextColor3",(opt==selected) and "Text" or "TextDim")
+                local optLbl=Instance.new("TextLabel"); optLbl.Text=opt; optLbl.TextSize=12
+                optLbl.Font=isSelected and Enum.Font.GothamMedium or Enum.Font.Gotham
+                optLbl.TextColor3=isSelected and Theme.Text or Theme.TextDim
+                optLbl.BackgroundTransparency=1; optLbl.Size=UDim2.new(1,-16,1,0)
+                optLbl.Position=UDim2.new(0,10,0,0); optLbl.TextXAlignment=Enum.TextXAlignment.Left
+                optLbl.Parent=row; T(optLbl,"TextColor3",isSelected and "Text" or "TextDim")
 
-                    row.MouseEnter:Connect(function()
-                        if opt~=selected then Tw(row,{BackgroundTransparency=0.6},0.1) end
-                    end)
-                    row.MouseLeave:Connect(function()
-                        if opt~=selected then Tw(row,{BackgroundTransparency=1},0.1) end
-                    end)
-                    row.InputBegan:Connect(function(i)
-                        if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInside = true end
-                    end)
-                    row.MouseButton1Click:Connect(function()
-                        selected=opt; valLbl.Text=selected
-                        BuildList(searchBox.Text)
-                        if callback then callback(selected) end
-                    end)
-                    table.insert(optionBtns, {btn=row, selBar=selBar, lbl=optLbl, opt=opt})
-                end
+                row.MouseEnter:Connect(function()
+                    if not isSelected then Tw(row,{BackgroundTransparency=0.5},0.08) end
+                end)
+                row.MouseLeave:Connect(function()
+                    if not isSelected then Tw(row,{BackgroundTransparency=1},0.08) end
+                end)
+                -- Mark as inside so outside-click handler ignores this
+                row.InputBegan:Connect(function(i)
+                    if i.UserInputType==Enum.UserInputType.MouseButton1 then
+                        clickedInside=true
+                    end
+                end)
+                row.MouseButton1Click:Connect(function()
+                    selected=opt; valLbl.Text=selected
+                    -- close first, then rebuild
+                    open=false; divLine.BackgroundTransparency=1
+                    cont.Size=UDim2.new(1,0,0,30); listScroll.Size=UDim2.new(1,-12,0,0)
+                    Tw(arrow,{Rotation=0},0.15)
+                    BuildList()
+                    if callback then callback(selected) end
+                end)
             end
         end
 
-        BuildList("")
-        searchBox:GetPropertyChangedSignal("Text"):Connect(function() BuildList(searchBox.Text) end)
+        BuildList()
 
-        -- Open / close helpers
         local function GetListH()
-            local count=0; for _,c in ipairs(listScroll:GetChildren()) do if not c:IsA("UIListLayout") then count=count+1 end end
+            local count=#options
             return math.min(count, MAX_VISIBLE) * (ITEM_H+2)
         end
 
         local function OpenDropdown()
             open=true; divLine.BackgroundTransparency=0
-            searchFrame.BackgroundTransparency=0; searchStroke.Transparency=0
-            local listH = GetListH()
-            local totalH = 30 + 1 + 6 + 24 + 4 + listH + 6   -- header+div+padding+search+gap+list+bottom
-            listScroll.Size=UDim2.new(1,-12,0,listH)
-            cont.Size=UDim2.new(1,0,0,totalH)
+            local lh=GetListH()
+            listScroll.Size=UDim2.new(1,-12,0,lh)
+            cont.Size=UDim2.new(1,0,0,30+1+4+lh+6)
             Tw(arrow,{Rotation=180},0.2)
         end
 
         local function CloseDropdown()
-            open=false; searchBox.Text=""; BuildList("")
-            divLine.BackgroundTransparency=1; searchFrame.BackgroundTransparency=1; searchStroke.Transparency=1
+            open=false; divLine.BackgroundTransparency=1
             cont.Size=UDim2.new(1,0,0,30); listScroll.Size=UDim2.new(1,-12,0,0)
             Tw(arrow,{Rotation=0},0.2)
         end
 
+        -- Header toggles open/close
+        hdr.InputBegan:Connect(function(i)
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then clickedInside=true end
+        end)
         hdr.MouseButton1Click:Connect(function()
             if open then CloseDropdown() else OpenDropdown() end
         end)
 
-        -- Use a flag set on ANY mousedown inside the dropdown tree
-        -- instead of unreliable coordinate math
+        -- cont and listScroll also count as inside
         cont.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                clickedInside = true
-            end
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then clickedInside=true end
         end)
         listScroll.InputBegan:Connect(function(i)
-            if i.UserInputType == Enum.UserInputType.MouseButton1 then
-                clickedInside = true
-            end
+            if i.UserInputType==Enum.UserInputType.MouseButton1 then clickedInside=true end
         end)
 
+        -- Global handler: close only if nothing inside was clicked
         UserInputService.InputBegan:Connect(function(i)
-            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if i.UserInputType~=Enum.UserInputType.MouseButton1 then return end
             if not open then return end
-            if clickedInside then
-                clickedInside = false
-                return
-            end
+            if clickedInside then clickedInside=false; return end
             CloseDropdown()
         end)
 
         local dapi={}
         function dapi:Get() return selected end
-        function dapi:Set(v)
-            selected=v; valLbl.Text=selected
-            BuildList(searchBox.Text)
-            if callback then callback(selected) end
-        end
-        function dapi:SetOptions(newOptions)
-            options=newOptions; BuildList(searchBox.Text)
-        end
+        function dapi:Set(v) selected=v; valLbl.Text=selected; BuildList() end
+        function dapi:SetOptions(o) options=o; selected=options[1] or ""; valLbl.Text=selected; BuildList() end
         return dapi
     end
 
