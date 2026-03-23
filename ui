@@ -14,25 +14,87 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
--- Theme
-local Theme = {
-    Background     = Color3.fromRGB(18, 18, 22),
-    Sidebar        = Color3.fromRGB(22, 22, 28),
-    Panel          = Color3.fromRGB(26, 26, 32),
-    PanelAlt       = Color3.fromRGB(30, 30, 38),
-    Accent         = Color3.fromRGB(138, 43, 226),   -- purple
-    AccentDim      = Color3.fromRGB(90, 20, 160),
-    Text           = Color3.fromRGB(220, 220, 230),
-    TextDim        = Color3.fromRGB(130, 130, 150),
-    TextDisabled   = Color3.fromRGB(70, 70, 85),
-    ToggleOn       = Color3.fromRGB(138, 43, 226),
-    ToggleOff      = Color3.fromRGB(50, 50, 62),
-    ButtonHover    = Color3.fromRGB(45, 45, 58),
-    Border         = Color3.fromRGB(45, 45, 58),
-    SidebarActive  = Color3.fromRGB(138, 43, 226),
-    SliderFill     = Color3.fromRGB(138, 43, 226),
-    SliderBg       = Color3.fromRGB(45, 45, 58),
+------------------------------------------------------------------------
+-- COLOR THEMES
+------------------------------------------------------------------------
+local Themes = {
+    Default = {
+        Background  = Color3.fromRGB(18,18,22),    Sidebar=Color3.fromRGB(22,22,28),
+        Panel       = Color3.fromRGB(26,26,32),    PanelAlt=Color3.fromRGB(30,30,38),
+        Accent      = Color3.fromRGB(138,43,226),  AccentDim=Color3.fromRGB(90,20,160),
+        ToggleOff   = Color3.fromRGB(50,50,62),    Border=Color3.fromRGB(45,45,58),
+        SliderBg    = Color3.fromRGB(45,45,58),    ButtonHover=Color3.fromRGB(45,45,58),
+        Text        = Color3.fromRGB(220,220,230), TextDim=Color3.fromRGB(130,130,150),
+        TextDisabled= Color3.fromRGB(70,70,85),
+    },
+    Black = {
+        Background  = Color3.fromRGB(5,5,5),       Sidebar=Color3.fromRGB(10,10,10),
+        Panel       = Color3.fromRGB(14,14,14),    PanelAlt=Color3.fromRGB(20,20,20),
+        Accent      = Color3.fromRGB(180,180,180), AccentDim=Color3.fromRGB(100,100,100),
+        ToggleOff   = Color3.fromRGB(35,35,35),    Border=Color3.fromRGB(35,35,35),
+        SliderBg    = Color3.fromRGB(35,35,35),    ButtonHover=Color3.fromRGB(30,30,30),
+        Text        = Color3.fromRGB(230,230,230), TextDim=Color3.fromRGB(120,120,120),
+        TextDisabled= Color3.fromRGB(60,60,60),
+    },
+    White = {
+        Background  = Color3.fromRGB(240,240,245), Sidebar=Color3.fromRGB(225,225,232),
+        Panel       = Color3.fromRGB(210,210,218), PanelAlt=Color3.fromRGB(200,200,210),
+        Accent      = Color3.fromRGB(80,80,200),   AccentDim=Color3.fromRGB(50,50,160),
+        ToggleOff   = Color3.fromRGB(170,170,185), Border=Color3.fromRGB(190,190,200),
+        SliderBg    = Color3.fromRGB(190,190,200), ButtonHover=Color3.fromRGB(185,185,198),
+        Text        = Color3.fromRGB(30,30,45),    TextDim=Color3.fromRGB(90,90,110),
+        TextDisabled= Color3.fromRGB(150,150,165),
+    },
+    Pink = {
+        Background  = Color3.fromRGB(20,14,20),    Sidebar=Color3.fromRGB(28,18,28),
+        Panel       = Color3.fromRGB(35,22,35),    PanelAlt=Color3.fromRGB(42,26,42),
+        Accent      = Color3.fromRGB(255,105,180), AccentDim=Color3.fromRGB(180,60,120),
+        ToggleOff   = Color3.fromRGB(60,38,58),    Border=Color3.fromRGB(60,38,58),
+        SliderBg    = Color3.fromRGB(60,38,58),    ButtonHover=Color3.fromRGB(55,35,55),
+        Text        = Color3.fromRGB(255,220,240), TextDim=Color3.fromRGB(180,130,165),
+        TextDisabled= Color3.fromRGB(100,70,95),
+    },
+    Grey = {
+        Background  = Color3.fromRGB(28,28,32),    Sidebar=Color3.fromRGB(35,35,40),
+        Panel       = Color3.fromRGB(42,42,48),    PanelAlt=Color3.fromRGB(50,50,57),
+        Accent      = Color3.fromRGB(160,160,175), AccentDim=Color3.fromRGB(100,100,115),
+        ToggleOff   = Color3.fromRGB(65,65,75),    Border=Color3.fromRGB(65,65,75),
+        SliderBg    = Color3.fromRGB(65,65,75),    ButtonHover=Color3.fromRGB(60,60,70),
+        Text        = Color3.fromRGB(210,210,220), TextDim=Color3.fromRGB(130,130,145),
+        TextDisabled= Color3.fromRGB(75,75,88),
+    },
+    Blue = {
+        Background  = Color3.fromRGB(10,14,26),    Sidebar=Color3.fromRGB(14,20,36),
+        Panel       = Color3.fromRGB(18,26,46),    PanelAlt=Color3.fromRGB(22,32,56),
+        Accent      = Color3.fromRGB(50,130,255),  AccentDim=Color3.fromRGB(25,80,180),
+        ToggleOff   = Color3.fromRGB(30,45,75),    Border=Color3.fromRGB(30,45,75),
+        SliderBg    = Color3.fromRGB(30,45,75),    ButtonHover=Color3.fromRGB(28,42,70),
+        Text        = Color3.fromRGB(210,225,255), TextDim=Color3.fromRGB(110,140,200),
+        TextDisabled= Color3.fromRGB(55,75,120),
+    },
+    Teal = {
+        Background  = Color3.fromRGB(8,20,22),     Sidebar=Color3.fromRGB(10,26,30),
+        Panel       = Color3.fromRGB(12,34,38),    PanelAlt=Color3.fromRGB(16,42,46),
+        Accent      = Color3.fromRGB(0,210,190),   AccentDim=Color3.fromRGB(0,140,125),
+        ToggleOff   = Color3.fromRGB(18,55,60),    Border=Color3.fromRGB(18,55,60),
+        SliderBg    = Color3.fromRGB(18,55,60),    ButtonHover=Color3.fromRGB(16,50,55),
+        Text        = Color3.fromRGB(200,245,240), TextDim=Color3.fromRGB(100,180,170),
+        TextDisabled= Color3.fromRGB(40,100,95),
+    },
 }
+
+-- Active mutable theme copy
+local Theme = {}
+for k,v in pairs(Themes.Default) do Theme[k]=v end
+Theme.ToggleOn     = Theme.Accent
+Theme.SidebarActive= Theme.Accent
+Theme.SliderFill   = Theme.Accent
+
+-- Tracked objects for live recolor: {prop, obj, themeKey}
+local ThemedObjects = {}
+local function Track(obj, prop, key)
+    table.insert(ThemedObjects, {obj=obj, prop=prop, key=key})
+end
 
 -- Utility: Tween helper
 local function Tween(obj, props, duration, style, dir)
@@ -110,6 +172,71 @@ local function Label(parent, text, size, color, weight)
     l.Size = UDim2.new(1, 0, 0, size and size + 4 or 18)
     l.Parent = parent
     return l
+end
+
+------------------------------------------------------------------------
+-- APPLY THEME (live recolor all tracked objects)
+------------------------------------------------------------------------
+local function ApplyTheme(themeName)
+    local t = Themes[themeName]
+    if not t then return end
+    for k,v in pairs(t) do Theme[k]=v end
+    Theme.ToggleOn      = Theme.Accent
+    Theme.SidebarActive = Theme.Accent
+    Theme.SliderFill    = Theme.Accent
+    for _, entry in ipairs(ThemedObjects) do
+        pcall(function()
+            local color = Theme[entry.key]
+            if color then
+                TweenService:Create(entry.obj, TweenInfo.new(0.25, Enum.EasingStyle.Quad), {[entry.prop]=color}):Play()
+            end
+        end)
+    end
+end
+
+------------------------------------------------------------------------
+-- CONFIG SYSTEM
+------------------------------------------------------------------------
+local ConfigSystem = {}
+local CONFIG_FOLDER = "FiberLib"
+
+local function EnsureFolder()
+    pcall(function()
+        if not isfolder(CONFIG_FOLDER) then makefolder(CONFIG_FOLDER) end
+    end)
+end
+
+function ConfigSystem.Save(name, data)
+    local ok = pcall(function()
+        EnsureFolder()
+        writefile(CONFIG_FOLDER.."/"..name..".json",
+            game:GetService("HttpService"):JSONEncode(data))
+    end)
+    return ok
+end
+
+function ConfigSystem.Load(name)
+    local ok, result = pcall(function()
+        return game:GetService("HttpService"):JSONDecode(
+            readfile(CONFIG_FOLDER.."/"..name..".json"))
+    end)
+    return ok and result or nil
+end
+
+function ConfigSystem.List()
+    local files = {}
+    pcall(function()
+        EnsureFolder()
+        for _, f in ipairs(listfiles(CONFIG_FOLDER)) do
+            local n = f:match("([^/\\]+)%.json$")
+            if n then table.insert(files, n) end
+        end
+    end)
+    return files
+end
+
+function ConfigSystem.Delete(name)
+    pcall(function() delfile(CONFIG_FOLDER.."/"..name..".json") end)
 end
 
 ------------------------------------------------------------------------
@@ -324,12 +451,34 @@ function FiberLib.new(title, subtitle)
 
     MakeDraggable(main, sidebar)
 
+    -- LEFT CTRL: toggle window visibility
+    local guiVisible = true
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp then return end
+        if input.KeyCode == Enum.KeyCode.LeftControl then
+            guiVisible = not guiVisible
+            main.Visible = guiVisible
+        end
+    end)
+
     -- Store refs
-    self._gui = gui
-    self._main = main
-    self._sidebar = sidebar
-    self._tabList = tabList
-    self._content = content
+    self._gui         = gui
+    self._main        = main
+    self._sidebar     = sidebar
+    self._tabList     = tabList
+    self._content     = content
+    self._accentDot   = accentDot
+    self._sidebarMask = sidebarMask
+    self.Config       = ConfigSystem
+
+    -- Track main themed objects
+    Track(main,        "BackgroundColor3", "Background")
+    Track(sidebar,     "BackgroundColor3", "Sidebar")
+    Track(sidebarMask, "BackgroundColor3", "Sidebar")
+    Track(accentDot,   "BackgroundColor3", "Accent")
+
+    -- Built-in SETTINGS tab (always last)
+    self:_BuildSettingsTab()
 
     return self
 end
@@ -1007,15 +1156,476 @@ end
 function FiberLib:_SelectTab(tabData)
     if self._activeTab then
         self._activeTab._page.Visible = false
-        Tween(self._activeTab._button, {BackgroundTransparency = 1}, 0.15)
-        Tween(self._activeTab._btnLabel, {TextColor3 = Theme.TextDim}, 0.15)
-        Tween(self._activeTab._accentBar, {BackgroundTransparency = 1}, 0.15)
+        TweenService:Create(self._activeTab._button, TweenInfo.new(0.15), {BackgroundTransparency=1}):Play()
+        TweenService:Create(self._activeTab._btnLabel, TweenInfo.new(0.15), {TextColor3=Theme.TextDim}):Play()
+        TweenService:Create(self._activeTab._accentBar, TweenInfo.new(0.15), {BackgroundTransparency=1}):Play()
     end
     self._activeTab = tabData
     tabData._page.Visible = true
-    Tween(tabData._button, {BackgroundColor3 = Theme.PanelAlt, BackgroundTransparency = 0}, 0.15)
-    Tween(tabData._btnLabel, {TextColor3 = Theme.Text}, 0.15)
-    Tween(tabData._accentBar, {BackgroundTransparency = 0}, 0.15)
+    TweenService:Create(tabData._button, TweenInfo.new(0.15), {BackgroundColor3=Theme.PanelAlt, BackgroundTransparency=0}):Play()
+    TweenService:Create(tabData._btnLabel, TweenInfo.new(0.15), {TextColor3=Theme.Text}):Play()
+    TweenService:Create(tabData._accentBar, TweenInfo.new(0.15), {BackgroundTransparency=0}):Play()
+end
+
+------------------------------------------------------------------------
+-- Internal: Build Settings Tab
+------------------------------------------------------------------------
+function FiberLib:_BuildSettingsTab()
+    local HttpService = game:GetService("HttpService")
+
+    -- ---- sidebar button (pinned at bottom above user badge) ----
+    local btn = Instance.new("TextButton")
+    btn.Name = "Settings"
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.BackgroundColor3 = Theme.Panel
+    btn.BackgroundTransparency = 1
+    btn.Text = ""
+    btn.BorderSizePixel = 0
+    btn.LayoutOrder = 9999
+    btn.Parent = self._tabList
+    AddCorner(btn, 6)
+
+    local accentBar = Instance.new("Frame")
+    accentBar.Size = UDim2.new(0, 3, 0.6, 0)
+    accentBar.Position = UDim2.new(0, 0, 0.2, 0)
+    accentBar.BackgroundColor3 = Theme.Accent
+    accentBar.BackgroundTransparency = 1
+    accentBar.BorderSizePixel = 0
+    accentBar.Parent = btn
+    AddCorner(accentBar, 99)
+
+    local btnLabel = Instance.new("TextLabel")
+    btnLabel.Text = "⚙  Settings"
+    btnLabel.TextSize = 13
+    btnLabel.Font = Enum.Font.GothamMedium
+    btnLabel.TextColor3 = Theme.TextDim
+    btnLabel.BackgroundTransparency = 1
+    btnLabel.Size = UDim2.new(1,-16,1,0)
+    btnLabel.Position = UDim2.new(0,12,0,0)
+    btnLabel.TextXAlignment = Enum.TextXAlignment.Left
+    btnLabel.Parent = btn
+
+    -- ---- page ----
+    local page = Instance.new("ScrollingFrame")
+    page.Name = "Settings_Page"
+    page.Size = UDim2.new(1,0,1,0)
+    page.BackgroundTransparency = 1
+    page.BorderSizePixel = 0
+    page.ScrollBarThickness = 3
+    page.ScrollBarImageColor3 = Theme.Accent
+    page.CanvasSize = UDim2.new(0,0,0,0)
+    page.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    page.Visible = false
+    page.Parent = self._content
+
+    local pageLayout = Instance.new("UIListLayout")
+    pageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    pageLayout.FillDirection = Enum.FillDirection.Vertical
+    pageLayout.Padding = UDim.new(0,8)
+    pageLayout.Parent = page
+    local pagePad = Instance.new("UIPadding")
+    pagePad.PaddingTop=UDim.new(0,8) pagePad.PaddingBottom=UDim.new(0,8)
+    pagePad.PaddingLeft=UDim.new(0,10) pagePad.PaddingRight=UDim.new(0,10)
+    pagePad.Parent = page
+
+    local tabData = {
+        name="Settings", _button=btn, _btnLabel=btnLabel,
+        _accentBar=accentBar, _page=page,
+    }
+    table.insert(self._tabs, tabData)
+
+    btn.MouseButton1Click:Connect(function() self:_SelectTab(tabData) end)
+    btn.MouseEnter:Connect(function()
+        if self._activeTab ~= tabData then
+            TweenService:Create(btn,TweenInfo.new(0.1),{BackgroundTransparency=0.7}):Play()
+        end
+    end)
+    btn.MouseLeave:Connect(function()
+        if self._activeTab ~= tabData then
+            TweenService:Create(btn,TweenInfo.new(0.1),{BackgroundTransparency=1}):Play()
+        end
+    end)
+
+    -- helper: make a section panel on the page
+    local function MakeSection(title)
+        local sf = Instance.new("Frame")
+        sf.BackgroundColor3 = Theme.Panel
+        sf.BorderSizePixel = 0
+        sf.AutomaticSize = Enum.AutomaticSize.Y
+        sf.Size = UDim2.new(1,0,0,0)
+        sf.Parent = page
+        AddCorner(sf, 8)
+        AddStroke(sf, Theme.Border, 1)
+        Track(sf, "BackgroundColor3", "Panel")
+
+        local inner = Instance.new("Frame")
+        inner.BackgroundTransparency = 1
+        inner.Size = UDim2.new(1,0,1,0)
+        inner.AutomaticSize = Enum.AutomaticSize.Y
+        inner.Parent = sf
+        AddPadding(inner, 8, 8, 8, 8)
+
+        local lay = Instance.new("UIListLayout")
+        lay.SortOrder = Enum.SortOrder.LayoutOrder
+        lay.Padding = UDim.new(0,6)
+        lay.Parent = inner
+
+        local hdr = Instance.new("TextLabel")
+        hdr.Text = title
+        hdr.TextSize = 13
+        hdr.Font = Enum.Font.GothamBold
+        hdr.TextColor3 = Theme.Text
+        hdr.BackgroundTransparency = 1
+        hdr.Size = UDim2.new(1,0,0,20)
+        hdr.TextXAlignment = Enum.TextXAlignment.Center
+        hdr.Parent = inner
+        Track(hdr, "TextColor3", "Text")
+
+        local div = Instance.new("Frame")
+        div.Size = UDim2.new(1,0,0,1)
+        div.BackgroundColor3 = Theme.Border
+        div.BorderSizePixel = 0
+        div.Parent = inner
+        Track(div, "BackgroundColor3", "Border")
+
+        return inner
+    end
+
+    -- =================== THEME SECTION ===================
+    local themeInner = MakeSection("Color Theme")
+
+    local themeNames = {"Default","Black","White","Pink","Grey","Blue","Teal"}
+    local themeColors = {
+        Default = Color3.fromRGB(138,43,226),
+        Black   = Color3.fromRGB(30,30,30),
+        White   = Color3.fromRGB(230,230,235),
+        Pink    = Color3.fromRGB(255,105,180),
+        Grey    = Color3.fromRGB(140,140,155),
+        Blue    = Color3.fromRGB(50,130,255),
+        Teal    = Color3.fromRGB(0,210,190),
+    }
+
+    -- Grid of color swatches
+    local swatchRow = Instance.new("Frame")
+    swatchRow.BackgroundTransparency = 1
+    swatchRow.Size = UDim2.new(1,0,0,36)
+    swatchRow.Parent = themeInner
+
+    local swatchLayout = Instance.new("UIListLayout")
+    swatchLayout.FillDirection = Enum.FillDirection.Horizontal
+    swatchLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    swatchLayout.Padding = UDim.new(0,6)
+    swatchLayout.Parent = swatchRow
+
+    local activeThemeName = "Default"
+    local swatches = {}
+
+    for _, tname in ipairs(themeNames) do
+        local sw = Instance.new("TextButton")
+        sw.Size = UDim2.new(0, 28, 0, 28)
+        sw.BackgroundColor3 = themeColors[tname]
+        sw.Text = ""
+        sw.BorderSizePixel = 0
+        sw.Parent = swatchRow
+        AddCorner(sw, 99)
+
+        -- White ring for selected
+        local ring = Instance.new("UIStroke")
+        ring.Color = Color3.fromRGB(255,255,255)
+        ring.Thickness = tname == "Default" and 2 or 0
+        ring.Parent = sw
+
+        local tooltip = Instance.new("TextLabel")
+        tooltip.Text = tname
+        tooltip.TextSize = 10
+        tooltip.Font = Enum.Font.Gotham
+        tooltip.TextColor3 = Color3.fromRGB(255,255,255)
+        tooltip.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        tooltip.BackgroundTransparency = 0.3
+        tooltip.Size = UDim2.new(0,50,0,16)
+        tooltip.Position = UDim2.new(0.5,-25,1,4)
+        tooltip.TextXAlignment = Enum.TextXAlignment.Center
+        tooltip.Visible = false
+        tooltip.ZIndex = 20
+        tooltip.Parent = sw
+        AddCorner(tooltip, 4)
+
+        sw.MouseEnter:Connect(function() tooltip.Visible = true end)
+        sw.MouseLeave:Connect(function() tooltip.Visible = false end)
+
+        sw.MouseButton1Click:Connect(function()
+            -- Remove ring from old
+            if swatches[activeThemeName] then
+                swatches[activeThemeName].ring.Thickness = 0
+            end
+            activeThemeName = tname
+            ring.Thickness = 2
+            ApplyTheme(tname)
+            -- save theme to config
+            ConfigSystem.Save("__theme__", {theme=tname})
+        end)
+
+        swatches[tname] = {btn=sw, ring=ring}
+    end
+
+    -- Active theme label
+    local themeLabel = Instance.new("TextLabel")
+    themeLabel.Text = "Active: Default"
+    themeLabel.TextSize = 11
+    themeLabel.Font = Enum.Font.Gotham
+    themeLabel.TextColor3 = Theme.TextDim
+    themeLabel.BackgroundTransparency = 1
+    themeLabel.Size = UDim2.new(1,0,0,16)
+    themeLabel.TextXAlignment = Enum.TextXAlignment.Center
+    themeLabel.Parent = themeInner
+    Track(themeLabel, "TextColor3", "TextDim")
+
+    -- Update label when theme changes
+    local origApply = ApplyTheme
+    local self_ref = self
+    -- Patch: wrap ApplyTheme to also update label
+    -- (We do this by connecting inside; ApplyTheme is already defined globally)
+    for _, tname in ipairs(themeNames) do
+        swatches[tname].btn.MouseButton1Click:Connect(function()
+            themeLabel.Text = "Active: "..tname
+        end)
+    end
+
+    -- =================== KEYBIND INFO ===================
+    local keybindInner = MakeSection("Keybinds")
+
+    local kbInfo = Instance.new("TextLabel")
+    kbInfo.Text = "Left CTRL — Toggle UI visibility"
+    kbInfo.TextSize = 12
+    kbInfo.Font = Enum.Font.Gotham
+    kbInfo.TextColor3 = Theme.TextDim
+    kbInfo.BackgroundTransparency = 1
+    kbInfo.Size = UDim2.new(1,0,0,18)
+    kbInfo.TextXAlignment = Enum.TextXAlignment.Center
+    kbInfo.Parent = keybindInner
+    Track(kbInfo, "TextColor3", "TextDim")
+
+    -- =================== CONFIG SECTION ===================
+    local configInner = MakeSection("Config")
+
+    -- Config name input (TextBox)
+    local inputFrame = Instance.new("Frame")
+    inputFrame.Size = UDim2.new(1,0,0,30)
+    inputFrame.BackgroundColor3 = Theme.PanelAlt
+    inputFrame.BorderSizePixel = 0
+    inputFrame.Parent = configInner
+    AddCorner(inputFrame, 5)
+    AddStroke(inputFrame, Theme.Border, 1)
+    Track(inputFrame, "BackgroundColor3", "PanelAlt")
+
+    local configInput = Instance.new("TextBox")
+    configInput.Size = UDim2.new(1,-12,1,0)
+    configInput.Position = UDim2.new(0,8,0,0)
+    configInput.BackgroundTransparency = 1
+    configInput.Text = ""
+    configInput.PlaceholderText = "Config name..."
+    configInput.TextColor3 = Theme.Text
+    configInput.PlaceholderColor3 = Theme.TextDim
+    configInput.TextSize = 12
+    configInput.Font = Enum.Font.Gotham
+    configInput.TextXAlignment = Enum.TextXAlignment.Left
+    configInput.ClearTextOnFocus = false
+    configInput.Parent = inputFrame
+    Track(configInput, "TextColor3", "Text")
+
+    -- Save / Load buttons side by side
+    local btnRow = Instance.new("Frame")
+    btnRow.Size = UDim2.new(1,0,0,28)
+    btnRow.BackgroundTransparency = 1
+    btnRow.Parent = configInner
+
+    local btnRowLayout = Instance.new("UIListLayout")
+    btnRowLayout.FillDirection = Enum.FillDirection.Horizontal
+    btnRowLayout.Padding = UDim.new(0,6)
+    btnRowLayout.Parent = btnRow
+
+    local function ConfigBtn(label, callback)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0.5,-3,1,0)
+        b.BackgroundColor3 = Theme.PanelAlt
+        b.Text = label
+        b.TextColor3 = Theme.Text
+        b.TextSize = 12
+        b.Font = Enum.Font.GothamMedium
+        b.BorderSizePixel = 0
+        b.Parent = btnRow
+        AddCorner(b, 5)
+        AddStroke(b, Theme.Border, 1)
+        Track(b, "BackgroundColor3", "PanelAlt")
+        Track(b, "TextColor3", "Text")
+        b.MouseEnter:Connect(function()
+            TweenService:Create(b,TweenInfo.new(0.1),{BackgroundColor3=Theme.ButtonHover}):Play()
+        end)
+        b.MouseLeave:Connect(function()
+            TweenService:Create(b,TweenInfo.new(0.1),{BackgroundColor3=Theme.PanelAlt}):Play()
+        end)
+        b.MouseButton1Click:Connect(function()
+            TweenService:Create(b,TweenInfo.new(0.05),{BackgroundColor3=Theme.AccentDim}):Play()
+            task.wait(0.1)
+            TweenService:Create(b,TweenInfo.new(0.1),{BackgroundColor3=Theme.PanelAlt}):Play()
+            callback()
+        end)
+        return b
+    end
+
+    -- Status label
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Text = ""
+    statusLabel.TextSize = 11
+    statusLabel.Font = Enum.Font.Gotham
+    statusLabel.TextColor3 = Theme.Accent
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Size = UDim2.new(1,0,0,16)
+    statusLabel.TextXAlignment = Enum.TextXAlignment.Center
+    statusLabel.Parent = configInner
+    Track(statusLabel, "TextColor3", "Accent")
+
+    local function SetStatus(msg, color)
+        statusLabel.Text = msg
+        statusLabel.TextColor3 = color or Theme.Accent
+        task.delay(3, function() statusLabel.Text = "" end)
+    end
+
+    ConfigBtn("💾  Save", function()
+        local name = configInput.Text
+        if name == "" then SetStatus("⚠ Enter a config name", Color3.fromRGB(255,180,0)) return end
+        local data = { theme = activeThemeName }
+        -- Let user extend via self.Config.SaveData
+        if self._configData then
+            for k,v in pairs(self._configData) do data[k]=v end
+        end
+        if ConfigSystem.Save(name, data) then
+            SetStatus("✔ Saved: "..name)
+            self:_RefreshConfigList(configListFrame, configInput, SetStatus, swatches, themeLabel)
+        else
+            SetStatus("✘ Save failed (no file access)", Color3.fromRGB(255,80,80))
+        end
+    end)
+
+    ConfigBtn("📂  Load", function()
+        local name = configInput.Text
+        if name == "" then SetStatus("⚠ Enter a config name", Color3.fromRGB(255,180,0)) return end
+        local data = ConfigSystem.Load(name)
+        if data then
+            if data.theme and Themes[data.theme] then
+                -- deselect old swatch
+                if swatches[activeThemeName] then swatches[activeThemeName].ring.Thickness=0 end
+                activeThemeName = data.theme
+                swatches[activeThemeName].ring.Thickness = 2
+                ApplyTheme(data.theme)
+                themeLabel.Text = "Active: "..data.theme
+            end
+            SetStatus("✔ Loaded: "..name)
+        else
+            SetStatus("✘ Config not found", Color3.fromRGB(255,80,80))
+        end
+    end)
+
+    -- Config list
+    local configListFrame = Instance.new("Frame")
+    configListFrame.Name = "ConfigList"
+    configListFrame.BackgroundTransparency = 1
+    configListFrame.AutomaticSize = Enum.AutomaticSize.Y
+    configListFrame.Size = UDim2.new(1,0,0,0)
+    configListFrame.Parent = configInner
+
+    local configListLayout = Instance.new("UIListLayout")
+    configListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    configListLayout.Padding = UDim.new(0,3)
+    configListLayout.Parent = configListFrame
+
+    self._configListFrame = configListFrame
+    self:_RefreshConfigList(configListFrame, configInput, SetStatus, swatches, themeLabel)
+
+    -- Load saved theme on startup
+    local savedTheme = ConfigSystem.Load("__theme__")
+    if savedTheme and savedTheme.theme and Themes[savedTheme.theme] then
+        if swatches[activeThemeName] then swatches[activeThemeName].ring.Thickness=0 end
+        activeThemeName = savedTheme.theme
+        swatches[activeThemeName].ring.Thickness = 2
+        ApplyTheme(savedTheme.theme)
+        themeLabel.Text = "Active: "..savedTheme.theme
+    end
+end
+
+------------------------------------------------------------------------
+-- Internal: Refresh config file list UI
+------------------------------------------------------------------------
+function FiberLib:_RefreshConfigList(listFrame, inputBox, setStatus, swatches, themeLabel)
+    -- clear old entries
+    for _, c in ipairs(listFrame:GetChildren()) do
+        if not c:IsA("UIListLayout") then c:Destroy() end
+    end
+
+    local files = ConfigSystem.List()
+    if #files == 0 then
+        local empty = Instance.new("TextLabel")
+        empty.Text = "No configs saved yet"
+        empty.TextSize = 11
+        empty.Font = Enum.Font.Gotham
+        empty.TextColor3 = Theme.TextDisabled
+        empty.BackgroundTransparency = 1
+        empty.Size = UDim2.new(1,0,0,16)
+        empty.TextXAlignment = Enum.TextXAlignment.Center
+        empty.Parent = listFrame
+        Track(empty, "TextColor3", "TextDisabled")
+        return
+    end
+
+    for _, fname in ipairs(files) do
+        if fname ~= "__theme__" then
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1,0,0,26)
+            row.BackgroundColor3 = Theme.PanelAlt
+            row.BorderSizePixel = 0
+            row.Parent = listFrame
+            AddCorner(row, 5)
+            Track(row, "BackgroundColor3", "PanelAlt")
+
+            local rowLayout = Instance.new("UIListLayout")
+            rowLayout.FillDirection = Enum.FillDirection.Horizontal
+            rowLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            rowLayout.Padding = UDim.new(0,4)
+            rowLayout.Parent = row
+            AddPadding(row, 0, 0, 8, 8)
+
+            local nameLbl = Instance.new("TextButton")
+            nameLbl.Text = fname
+            nameLbl.TextSize = 12
+            nameLbl.Font = Enum.Font.Gotham
+            nameLbl.TextColor3 = Theme.Text
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Size = UDim2.new(1,-52,1,0)
+            nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+            nameLbl.Parent = row
+            Track(nameLbl, "TextColor3", "Text")
+            nameLbl.MouseButton1Click:Connect(function()
+                inputBox.Text = fname
+            end)
+
+            local delBtn = Instance.new("TextButton")
+            delBtn.Text = "✕"
+            delBtn.TextSize = 11
+            delBtn.Font = Enum.Font.GothamBold
+            delBtn.TextColor3 = Color3.fromRGB(200,80,80)
+            delBtn.BackgroundColor3 = Theme.Panel
+            delBtn.Size = UDim2.new(0,22,0,18)
+            delBtn.BorderSizePixel = 0
+            delBtn.Parent = row
+            AddCorner(delBtn, 4)
+            Track(delBtn, "BackgroundColor3", "Panel")
+            delBtn.MouseButton1Click:Connect(function()
+                ConfigSystem.Delete(fname)
+                setStatus("🗑 Deleted: "..fname, Color3.fromRGB(255,100,100))
+                self:_RefreshConfigList(listFrame, inputBox, setStatus, swatches, themeLabel)
+            end)
+        end
+    end
 end
 
 return FiberLib
