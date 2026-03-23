@@ -316,6 +316,9 @@ local function BuildElements(sectionInner)
         local listLayout = Instance.new("UIListLayout")
         listLayout.SortOrder=Enum.SortOrder.LayoutOrder; listLayout.Padding=UDim.new(0,2); listLayout.Parent=listScroll
 
+        -- Declare before BuildList so rows created on first call can reference it
+        local clickedInside = false
+
         -- Build option rows
         local optionBtns = {}
         local function BuildList(filter)
@@ -350,9 +353,11 @@ local function BuildElements(sectionInner)
                     row.MouseLeave:Connect(function()
                         if opt~=selected then Tw(row,{BackgroundTransparency=1},0.1) end
                     end)
+                    row.InputBegan:Connect(function(i)
+                        if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInside = true end
+                    end)
                     row.MouseButton1Click:Connect(function()
                         selected=opt; valLbl.Text=selected
-                        -- Rebuild to update styling
                         BuildList(searchBox.Text)
                         if callback then callback(selected) end
                     end)
@@ -393,8 +398,6 @@ local function BuildElements(sectionInner)
 
         -- Use a flag set on ANY mousedown inside the dropdown tree
         -- instead of unreliable coordinate math
-        local clickedInside = false
-
         cont.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then
                 clickedInside = true
@@ -478,6 +481,9 @@ local function BuildElements(sectionInner)
         T(listScroll,"ScrollBarImageColor3","Accent")
         local listLayout=Instance.new("UIListLayout"); listLayout.SortOrder=Enum.SortOrder.LayoutOrder; listLayout.Padding=UDim.new(0,2); listLayout.Parent=listScroll
 
+        -- Declare before BuildList so first-call rows can reference it
+        local clickedInsideM = false
+
         local function BuildList()
             for _,c in ipairs(listScroll:GetChildren()) do if not c:IsA("UIListLayout") then c:Destroy() end end
             for _,opt in ipairs(options) do
@@ -504,6 +510,9 @@ local function BuildElements(sectionInner)
 
                 row.MouseEnter:Connect(function() if not selected[opt] then Tw(row,{BackgroundTransparency=0.6},0.1) end end)
                 row.MouseLeave:Connect(function() if not selected[opt] then Tw(row,{BackgroundTransparency=1},0.1) end end)
+                row.InputBegan:Connect(function(i)
+                    if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInsideM = true end
+                end)
                 row.MouseButton1Click:Connect(function()
                     selected[opt]=not selected[opt]; valLbl.Text=SelectedText(); BuildList()
                     if callback then
@@ -532,7 +541,7 @@ local function BuildElements(sectionInner)
 
         hdr.MouseButton1Click:Connect(function() if open then CloseDD() else OpenDD() end end)
 
-        local clickedInsideM = false
+        local clickedInsideM_unused = false -- placeholder, real var declared above
         cont.InputBegan:Connect(function(i)
             if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInsideM = true end
         end)
