@@ -765,6 +765,239 @@ function FiberLib:AddTab(name, icon)
         return elemAPI
     end
 
+    -- Helper: build element API attached to a given sectionInner frame
+    local function BuildElemAPI(sectionInner)
+        local api = {}
+
+        function api:AddToggle(label, default, callback)
+            local state = default or false
+            local row = Instance.new("Frame")
+            row.Size = UDim2.new(1, 0, 0, 28)
+            row.BackgroundColor3 = Theme.PanelAlt
+            row.BorderSizePixel = 0
+            row.Parent = sectionInner
+            AddCorner(row, 5)
+
+            local rowLabel = Label(row, label, 12, Theme.Text, Enum.Font.Gotham)
+            rowLabel.Position = UDim2.new(0, 10, 0.5, -9)
+            rowLabel.Size = UDim2.new(1, -48, 0, 18)
+
+            local pill = Instance.new("Frame")
+            pill.Size = UDim2.new(0, 32, 0, 16)
+            pill.Position = UDim2.new(1, -42, 0.5, -8)
+            pill.BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff
+            pill.BorderSizePixel = 0
+            pill.Parent = row
+            AddCorner(pill, 99)
+
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.new(0, 10, 0, 10)
+            knob.Position = state and UDim2.new(1,-13,0.5,-5) or UDim2.new(0,3,0.5,-5)
+            knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+            knob.BorderSizePixel = 0
+            knob.Parent = pill
+            AddCorner(knob, 99)
+
+            local clickArea = Instance.new("TextButton")
+            clickArea.Size = UDim2.new(1,0,1,0)
+            clickArea.BackgroundTransparency = 1
+            clickArea.Text = ""
+            clickArea.Parent = row
+
+            clickArea.MouseButton1Click:Connect(function()
+                state = not state
+                Tween(pill, {BackgroundColor3 = state and Theme.ToggleOn or Theme.ToggleOff}, 0.15)
+                Tween(knob, {Position = state and UDim2.new(1,-13,0.5,-5) or UDim2.new(0,3,0.5,-5)}, 0.15)
+                if callback then callback(state) end
+            end)
+
+            local tapi = {}
+            function tapi:Set(v) state=v Tween(pill,{BackgroundColor3=state and Theme.ToggleOn or Theme.ToggleOff},0.15) Tween(knob,{Position=state and UDim2.new(1,-13,0.5,-5) or UDim2.new(0,3,0.5,-5)},0.15) end
+            function tapi:Get() return state end
+            return tapi
+        end
+
+        function api:AddButton(label, callback)
+            local btn2 = Instance.new("TextButton")
+            btn2.Size = UDim2.new(1, 0, 0, 28)
+            btn2.BackgroundColor3 = Theme.PanelAlt
+            btn2.Text = label or "Button"
+            btn2.TextColor3 = Theme.Text
+            btn2.TextSize = 12
+            btn2.Font = Enum.Font.GothamMedium
+            btn2.BorderSizePixel = 0
+            btn2.Parent = sectionInner
+            AddCorner(btn2, 5)
+            AddStroke(btn2, Theme.Border, 1)
+
+            btn2.MouseEnter:Connect(function() Tween(btn2,{BackgroundColor3=Theme.ButtonHover},0.1) end)
+            btn2.MouseLeave:Connect(function() Tween(btn2,{BackgroundColor3=Theme.PanelAlt},0.1) end)
+            btn2.MouseButton1Click:Connect(function()
+                Tween(btn2,{BackgroundColor3=Theme.AccentDim},0.05)
+                task.wait(0.1)
+                Tween(btn2,{BackgroundColor3=Theme.PanelAlt},0.1)
+                if callback then callback() end
+            end)
+            return btn2
+        end
+
+        function api:AddSlider(label, min, max, default, callback)
+            min = min or 0; max = max or 100
+            local value = math.clamp(default or min, min, max)
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1,0,0,40)
+            container.BackgroundColor3 = Theme.PanelAlt
+            container.BorderSizePixel = 0
+            container.Parent = sectionInner
+            AddCorner(container, 5)
+
+            local topRow = Instance.new("Frame")
+            topRow.Size = UDim2.new(1,-16,0,18)
+            topRow.Position = UDim2.new(0,8,0,5)
+            topRow.BackgroundTransparency = 1
+            topRow.Parent = container
+
+            local lbl = Label(topRow, label, 12, Theme.Text, Enum.Font.Gotham)
+            lbl.Size = UDim2.new(0.7,0,1,0)
+            local valLabel = Label(topRow, tostring(value), 11, Theme.TextDim, Enum.Font.Gotham)
+            valLabel.Size = UDim2.new(0.3,0,1,0)
+            valLabel.Position = UDim2.new(0.7,0,0,0)
+            valLabel.TextXAlignment = Enum.TextXAlignment.Right
+
+            local track = Instance.new("Frame")
+            track.Size = UDim2.new(1,-16,0,6)
+            track.Position = UDim2.new(0,8,1,-14)
+            track.BackgroundColor3 = Theme.SliderBg
+            track.BorderSizePixel = 0
+            track.Parent = container
+            AddCorner(track, 99)
+
+            local fill = Instance.new("Frame")
+            fill.Size = UDim2.new((value-min)/(max-min),0,1,0)
+            fill.BackgroundColor3 = Theme.SliderFill
+            fill.BorderSizePixel = 0
+            fill.Parent = track
+            AddCorner(fill, 99)
+
+            local hitbox = Instance.new("TextButton")
+            hitbox.Size = UDim2.new(1,0,1,0)
+            hitbox.BackgroundTransparency = 1
+            hitbox.Text = ""
+            hitbox.Parent = track
+
+            local draggingSlider = false
+            hitbox.MouseButton1Down:Connect(function() draggingSlider = true end)
+            UserInputService.InputEnded:Connect(function(i)
+                if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
+            end)
+            RunService.RenderStepped:Connect(function()
+                if draggingSlider then
+                    local pos = UserInputService:GetMouseLocation()
+                    local rel = math.clamp((pos.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                    value = math.floor(min + rel*(max-min))
+                    valLabel.Text = tostring(value)
+                    Tween(fill,{Size=UDim2.new(rel,0,1,0)},0.05)
+                    if callback then callback(value) end
+                end
+            end)
+
+            local sapi = {}
+            function sapi:Set(v) value=math.clamp(v,min,max) local r=(value-min)/(max-min) Tween(fill,{Size=UDim2.new(r,0,1,0)},0.1) valLabel.Text=tostring(value) end
+            function sapi:Get() return value end
+            return sapi
+        end
+
+        function api:AddLabel(text, color)
+            local l = Instance.new("TextLabel")
+            l.Text = text or ""
+            l.TextSize = 11
+            l.Font = Enum.Font.Gotham
+            l.TextColor3 = color or Theme.TextDim
+            l.BackgroundTransparency = 1
+            l.Size = UDim2.new(1,0,0,16)
+            l.TextXAlignment = Enum.TextXAlignment.Center
+            l.Parent = sectionInner
+            return l
+        end
+
+        function api:AddSeparator()
+            local sep = Instance.new("Frame")
+            sep.Size = UDim2.new(1,0,0,1)
+            sep.BackgroundColor3 = Theme.Border
+            sep.BorderSizePixel = 0
+            sep.Parent = sectionInner
+        end
+
+        return api
+    end
+
+    -- AddDoubleSection: two side-by-side sections in one row
+    function sectionAPI:AddDoubleSection(leftTitle, rightTitle)
+        -- Row container
+        local row = Instance.new("Frame")
+        row.Name = "DoubleSection"
+        row.BackgroundTransparency = 1
+        row.BorderSizePixel = 0
+        row.AutomaticSize = Enum.AutomaticSize.Y
+        row.Size = UDim2.new(1, 0, 0, 0)
+        row.Parent = page
+
+        local rowLayout = Instance.new("UIListLayout")
+        rowLayout.FillDirection = Enum.FillDirection.Horizontal
+        rowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        rowLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+        rowLayout.Padding = UDim.new(0, 8)
+        rowLayout.Parent = row
+
+        local function MakeCol(title)
+            local col = Instance.new("Frame")
+            col.BackgroundColor3 = Theme.Panel
+            col.BorderSizePixel = 0
+            col.AutomaticSize = Enum.AutomaticSize.Y
+            col.Size = UDim2.new(0.5, -4, 0, 0)
+            col.Parent = row
+            AddCorner(col, 8)
+            AddStroke(col, Theme.Border, 1)
+
+            local inner = Instance.new("Frame")
+            inner.BackgroundTransparency = 1
+            inner.Size = UDim2.new(1, 0, 1, 0)
+            inner.AutomaticSize = Enum.AutomaticSize.Y
+            inner.Parent = col
+            AddPadding(inner, 8, 8, 8, 8)
+
+            local layout = Instance.new("UIListLayout")
+            layout.SortOrder = Enum.SortOrder.LayoutOrder
+            layout.Padding = UDim.new(0, 4)
+            layout.Parent = inner
+
+            if title then
+                local titleLbl = Instance.new("TextLabel")
+                titleLbl.Text = title
+                titleLbl.TextSize = 13
+                titleLbl.Font = Enum.Font.GothamBold
+                titleLbl.TextColor3 = Theme.Text
+                titleLbl.BackgroundTransparency = 1
+                titleLbl.Size = UDim2.new(1, 0, 0, 20)
+                titleLbl.TextXAlignment = Enum.TextXAlignment.Center
+                titleLbl.Parent = inner
+
+                local div = Instance.new("Frame")
+                div.Size = UDim2.new(1,0,0,1)
+                div.BackgroundColor3 = Theme.Border
+                div.BorderSizePixel = 0
+                div.Parent = inner
+            end
+
+            return BuildElemAPI(inner)
+        end
+
+        local leftAPI  = MakeCol(leftTitle)
+        local rightAPI = MakeCol(rightTitle)
+
+        return leftAPI, rightAPI
+    end
+
     return sectionAPI
 end
 
