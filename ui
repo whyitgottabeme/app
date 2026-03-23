@@ -391,28 +391,29 @@ local function BuildElements(sectionInner)
             if open then CloseDropdown() else OpenDropdown() end
         end)
 
-        -- Close if user clicks outside — check against listScroll bottom edge not cont.AbsoluteSize
-        local justOpened = false
-        UserInputService.InputBegan:Connect(function(i)
-            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-            if justOpened then return end
-            if not open then return end
-            local mp = UserInputService:GetMouseLocation()
-            local top = cont.AbsolutePosition
-            local bottom = listScroll.AbsolutePosition + listScroll.AbsoluteSize
-            local left = top.X
-            local right = top.X + cont.AbsoluteSize.X
-            if mp.X < left or mp.X > right or mp.Y < top.Y or mp.Y > bottom.Y then
-                CloseDropdown()
+        -- Use a flag set on ANY mousedown inside the dropdown tree
+        -- instead of unreliable coordinate math
+        local clickedInside = false
+
+        cont.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                clickedInside = true
+            end
+        end)
+        listScroll.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then
+                clickedInside = true
             end
         end)
 
-        -- Prevent the open click from instantly re-firing the outside check
-        hdr.MouseButton1Down:Connect(function()
-            if not open then
-                justOpened = true
-                task.delay(0.05, function() justOpened = false end)
+        UserInputService.InputBegan:Connect(function(i)
+            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if not open then return end
+            if clickedInside then
+                clickedInside = false
+                return
             end
+            CloseDropdown()
         end)
 
         local dapi={}
@@ -531,25 +532,19 @@ local function BuildElements(sectionInner)
 
         hdr.MouseButton1Click:Connect(function() if open then CloseDD() else OpenDD() end end)
 
-        local justOpenedM = false
-        UserInputService.InputBegan:Connect(function(i)
-            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
-            if justOpenedM then return end
-            if not open then return end
-            local mp = UserInputService:GetMouseLocation()
-            local top = cont.AbsolutePosition
-            local bottom = listScroll.AbsolutePosition + listScroll.AbsoluteSize
-            local right = top.X + cont.AbsoluteSize.X
-            if mp.X < top.X or mp.X > right or mp.Y < top.Y or mp.Y > bottom.Y then
-                CloseDD()
-            end
+        local clickedInsideM = false
+        cont.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInsideM = true end
+        end)
+        listScroll.InputBegan:Connect(function(i)
+            if i.UserInputType == Enum.UserInputType.MouseButton1 then clickedInsideM = true end
         end)
 
-        hdr.MouseButton1Down:Connect(function()
-            if not open then
-                justOpenedM = true
-                task.delay(0.05, function() justOpenedM = false end)
-            end
+        UserInputService.InputBegan:Connect(function(i)
+            if i.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+            if not open then return end
+            if clickedInsideM then clickedInsideM = false; return end
+            CloseDD()
         end)
 
         local mapi={}
