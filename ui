@@ -232,28 +232,303 @@ local function BuildElements(sectionInner)
         local s=Instance.new("Frame"); s.Size=UDim2.new(1,0,0,1); s.BackgroundColor3=Theme.Border; s.BorderSizePixel=0; s.Parent=sectionInner; T(s,"BackgroundColor3","Border")
     end
 
-    -- DROPDOWN
-    function api:AddDropdown(label,options,default,callback)
-        local selected=default or (options and options[1]) or ""; local open=false
-        local cont=Instance.new("Frame"); cont.Size=UDim2.new(1,0,0,28); cont.BackgroundColor3=Theme.PanelAlt
-        cont.BorderSizePixel=0; cont.ClipsDescendants=false; cont.Parent=sectionInner; Corner(cont,5)
-        local cs=Stroke(cont,Theme.Border,1); T(cont,"BackgroundColor3","PanelAlt"); T(cs,"Color","Border")
-        local hdr=Instance.new("TextButton"); hdr.Size=UDim2.new(1,0,0,28); hdr.BackgroundTransparency=1; hdr.Text=""; hdr.Parent=cont
-        local hl=Lbl(hdr,label..": "..selected,12,Theme.Text,Enum.Font.Gotham); hl.Position=UDim2.new(0,10,0.5,-9); hl.Size=UDim2.new(1,-36,0,18); T(hl,"TextColor3","Text")
-        local ar=Lbl(hdr,"▾",13,Theme.TextDim,Enum.Font.GothamBold); ar.Position=UDim2.new(1,-22,0.5,-9); ar.Size=UDim2.new(0,18,0,18); ar.TextXAlignment=Enum.TextXAlignment.Center; T(ar,"TextColor3","TextDim")
-        local dd=Instance.new("Frame"); dd.Size=UDim2.new(1,0,0,0); dd.Position=UDim2.new(0,0,1,2); dd.BackgroundColor3=Theme.Panel; dd.BorderSizePixel=0; dd.Visible=false; dd.ZIndex=10; dd.Parent=cont; Corner(dd,6)
-        local ds=Stroke(dd,Theme.Border,1); T(dd,"BackgroundColor3","Panel"); T(ds,"Color","Border")
-        local dl=Instance.new("UIListLayout"); dl.SortOrder=Enum.SortOrder.LayoutOrder; dl.Parent=dd; Pad(dd,4,4,4,4)
-        for _,opt in ipairs(options or {}) do
-            local ob=Instance.new("TextButton"); ob.Size=UDim2.new(1,0,0,24); ob.BackgroundTransparency=1
-            ob.Text=opt; ob.TextColor3=Theme.TextDim; ob.TextSize=12; ob.Font=Enum.Font.Gotham
-            ob.TextXAlignment=Enum.TextXAlignment.Left; ob.ZIndex=11; ob.Parent=dd; Pad(ob,0,0,6,0); T(ob,"TextColor3","TextDim")
-            ob.MouseEnter:Connect(function() Tw(ob,{TextColor3=Theme.Text},0.1) end)
-            ob.MouseLeave:Connect(function() Tw(ob,{TextColor3=Theme.TextDim},0.1) end)
-            ob.MouseButton1Click:Connect(function() selected=opt; hl.Text=label..": "..selected; open=false; dd.Visible=false; cont.Size=UDim2.new(1,0,0,28); if callback then callback(selected) end end)
+    -- DROPDOWN  (single-select, animated, scrollable, searchable)
+    function api:AddDropdown(label, options, default, callback)
+        options = options or {}
+        local selected = default or options[1] or ""
+        local open = false
+        local MAX_VISIBLE = 5  -- items before scroll kicks in
+        local ITEM_H = 26
+
+        -- Wrapper — grows when open
+        local cont = Instance.new("Frame")
+        cont.Size = UDim2.new(1,0,0,30)
+        cont.BackgroundColor3 = Theme.PanelAlt
+        cont.BorderSizePixel = 0
+        cont.ClipsDescendants = false
+        cont.Parent = sectionInner
+        Corner(cont,6)
+        local cs = Stroke(cont,Theme.Border,1); T(cont,"BackgroundColor3","PanelAlt"); T(cs,"Color","Border")
+
+        -- Header row
+        local hdr = Instance.new("TextButton")
+        hdr.Size = UDim2.new(1,0,0,30); hdr.BackgroundTransparency=1; hdr.Text=""; hdr.Parent=cont
+
+        -- Label text
+        local labelLbl = Instance.new("TextLabel")
+        labelLbl.Text = label; labelLbl.TextSize=11; labelLbl.Font=Enum.Font.Gotham
+        labelLbl.TextColor3=Theme.TextDim; labelLbl.BackgroundTransparency=1
+        labelLbl.Size=UDim2.new(0,0,0,30); labelLbl.AutomaticSize=Enum.AutomaticSize.X
+        labelLbl.Position=UDim2.new(0,10,0,0); labelLbl.TextXAlignment=Enum.TextXAlignment.Left
+        labelLbl.Parent=hdr; T(labelLbl,"TextColor3","TextDim")
+
+        -- Selected value text
+        local valLbl = Instance.new("TextLabel")
+        valLbl.Text = selected; valLbl.TextSize=12; valLbl.Font=Enum.Font.GothamMedium
+        valLbl.TextColor3=Theme.Text; valLbl.BackgroundTransparency=1
+        valLbl.Size=UDim2.new(1,-52,0,30); valLbl.Position=UDim2.new(0,10,0,0)
+        valLbl.TextXAlignment=Enum.TextXAlignment.Right; valLbl.Parent=hdr
+        T(valLbl,"TextColor3","Text")
+
+        -- Arrow icon
+        local arrow = Instance.new("TextLabel")
+        arrow.Text="▾"; arrow.TextSize=14; arrow.Font=Enum.Font.GothamBold
+        arrow.TextColor3=Theme.TextDim; arrow.BackgroundTransparency=1
+        arrow.Size=UDim2.new(0,24,0,30); arrow.Position=UDim2.new(1,-28,0,0)
+        arrow.TextXAlignment=Enum.TextXAlignment.Center; arrow.Parent=hdr
+        T(arrow,"TextColor3","TextDim")
+
+        -- Divider between header and list
+        local divLine = Instance.new("Frame")
+        divLine.Size=UDim2.new(1,-16,0,1); divLine.Position=UDim2.new(0,8,0,30)
+        divLine.BackgroundColor3=Theme.Border; divLine.BorderSizePixel=0
+        divLine.BackgroundTransparency=1; divLine.Parent=cont
+        T(divLine,"BackgroundColor3","Border")
+
+        -- Search box
+        local searchFrame = Instance.new("Frame")
+        searchFrame.Size=UDim2.new(1,-12,0,24); searchFrame.Position=UDim2.new(0,6,0,36)
+        searchFrame.BackgroundColor3=Theme.Background; searchFrame.BorderSizePixel=0
+        searchFrame.BackgroundTransparency=1; searchFrame.Parent=cont
+        Corner(searchFrame,4)
+        local searchStroke=Stroke(searchFrame,Theme.Border,1)
+        searchStroke.Transparency=1
+        T(searchFrame,"BackgroundColor3","Background"); T(searchStroke,"Color","Border")
+
+        local searchBox = Instance.new("TextBox")
+        searchBox.Size=UDim2.new(1,-8,1,0); searchBox.Position=UDim2.new(0,6,0,0)
+        searchBox.BackgroundTransparency=1; searchBox.Text=""
+        searchBox.PlaceholderText="Search..."; searchBox.TextColor3=Theme.Text
+        searchBox.PlaceholderColor3=Theme.TextDim; searchBox.TextSize=11
+        searchBox.Font=Enum.Font.Gotham; searchBox.TextXAlignment=Enum.TextXAlignment.Left
+        searchBox.ClearTextOnFocus=false; searchBox.Parent=searchFrame
+        T(searchBox,"TextColor3","Text"); T(searchBox,"PlaceholderColor3","TextDim")
+
+        -- Scrolling list
+        local listScroll = Instance.new("ScrollingFrame")
+        listScroll.Size=UDim2.new(1,-12,0,0); listScroll.Position=UDim2.new(0,6,0,66)
+        listScroll.BackgroundTransparency=1; listScroll.BorderSizePixel=0
+        listScroll.ScrollBarThickness=3; listScroll.ScrollBarImageColor3=Theme.Accent
+        listScroll.CanvasSize=UDim2.new(0,0,0,0); listScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y
+        listScroll.BackgroundTransparency=1; listScroll.Parent=cont
+        T(listScroll,"ScrollBarImageColor3","Accent")
+
+        local listLayout = Instance.new("UIListLayout")
+        listLayout.SortOrder=Enum.SortOrder.LayoutOrder; listLayout.Padding=UDim.new(0,2); listLayout.Parent=listScroll
+
+        -- Build option rows
+        local optionBtns = {}
+        local function BuildList(filter)
+            for _,c in ipairs(listScroll:GetChildren()) do
+                if not c:IsA("UIListLayout") then c:Destroy() end
+            end
+            optionBtns = {}
+            for _,opt in ipairs(options) do
+                if filter=="" or opt:lower():find(filter:lower(),1,true) then
+                    local row = Instance.new("TextButton")
+                    row.Size=UDim2.new(1,0,0,ITEM_H); row.BackgroundColor3=Theme.PanelAlt
+                    row.BackgroundTransparency = (opt==selected) and 0 or 1
+                    row.Text=""; row.BorderSizePixel=0; row.Parent=listScroll
+                    Corner(row,4)
+                    T(row,"BackgroundColor3","PanelAlt")
+
+                    -- Accent left bar for selected
+                    local selBar=Instance.new("Frame"); selBar.Size=UDim2.new(0,3,0.6,0); selBar.Position=UDim2.new(0,0,0.2,0)
+                    selBar.BackgroundColor3=Theme.Accent; selBar.BackgroundTransparency=(opt==selected) and 0 or 1
+                    selBar.BorderSizePixel=0; selBar.Parent=row; Corner(selBar,99); T(selBar,"BackgroundColor3","Accent")
+
+                    local optLbl=Instance.new("TextLabel"); optLbl.Text=opt; optLbl.TextSize=12
+                    optLbl.Font=(opt==selected) and Enum.Font.GothamMedium or Enum.Font.Gotham
+                    optLbl.TextColor3=(opt==selected) and Theme.Text or Theme.TextDim
+                    optLbl.BackgroundTransparency=1; optLbl.Size=UDim2.new(1,-16,1,0)
+                    optLbl.Position=UDim2.new(0,10,0,0); optLbl.TextXAlignment=Enum.TextXAlignment.Left; optLbl.Parent=row
+                    T(optLbl,"TextColor3",(opt==selected) and "Text" or "TextDim")
+
+                    row.MouseEnter:Connect(function()
+                        if opt~=selected then Tw(row,{BackgroundTransparency=0.6},0.1) end
+                    end)
+                    row.MouseLeave:Connect(function()
+                        if opt~=selected then Tw(row,{BackgroundTransparency=1},0.1) end
+                    end)
+                    row.MouseButton1Click:Connect(function()
+                        selected=opt; valLbl.Text=selected
+                        -- Rebuild to update styling
+                        BuildList(searchBox.Text)
+                        if callback then callback(selected) end
+                    end)
+                    table.insert(optionBtns, {btn=row, selBar=selBar, lbl=optLbl, opt=opt})
+                end
+            end
         end
-        hdr.MouseButton1Click:Connect(function() open=not open; dd.Visible=open; local n=#(options or {}); if open then dd.Size=UDim2.new(1,0,0,n*24+8); cont.Size=UDim2.new(1,0,0,28+n*24+10) else cont.Size=UDim2.new(1,0,0,28) end end)
-        local dapi={}; function dapi:Get() return selected end; function dapi:Set(v) selected=v; hl.Text=label..": "..selected; if callback then callback(selected) end end; return dapi
+
+        BuildList("")
+        searchBox:GetPropertyChangedSignal("Text"):Connect(function() BuildList(searchBox.Text) end)
+
+        -- Open / close helpers
+        local function GetListH()
+            local count=0; for _,c in ipairs(listScroll:GetChildren()) do if not c:IsA("UIListLayout") then count=count+1 end end
+            return math.min(count, MAX_VISIBLE) * (ITEM_H+2)
+        end
+
+        local function OpenDropdown()
+            open=true; divLine.BackgroundTransparency=0
+            searchFrame.BackgroundTransparency=0; searchStroke.Transparency=0
+            local listH = GetListH()
+            local totalH = 30 + 1 + 6 + 24 + 4 + listH + 6   -- header+div+padding+search+gap+list+bottom
+            listScroll.Size=UDim2.new(1,-12,0,listH)
+            cont.Size=UDim2.new(1,0,0,totalH)
+            Tw(arrow,{Rotation=180},0.2)
+        end
+
+        local function CloseDropdown()
+            open=false; searchBox.Text=""; BuildList("")
+            divLine.BackgroundTransparency=1; searchFrame.BackgroundTransparency=1; searchStroke.Transparency=1
+            cont.Size=UDim2.new(1,0,0,30); listScroll.Size=UDim2.new(1,-12,0,0)
+            Tw(arrow,{Rotation=0},0.2)
+        end
+
+        hdr.MouseButton1Click:Connect(function()
+            if open then CloseDropdown() else OpenDropdown() end
+        end)
+
+        -- Close if user clicks outside
+        UserInputService.InputBegan:Connect(function(i)
+            if open and i.UserInputType==Enum.UserInputType.MouseButton1 then
+                local mp=UserInputService:GetMouseLocation()
+                local pos=cont.AbsolutePosition; local sz=cont.AbsoluteSize
+                if mp.X<pos.X or mp.X>pos.X+sz.X or mp.Y<pos.Y or mp.Y>pos.Y+sz.Y then
+                    CloseDropdown()
+                end
+            end
+        end)
+
+        local dapi={}
+        function dapi:Get() return selected end
+        function dapi:Set(v)
+            selected=v; valLbl.Text=selected
+            BuildList(searchBox.Text)
+            if callback then callback(selected) end
+        end
+        function dapi:SetOptions(newOptions)
+            options=newOptions; BuildList(searchBox.Text)
+        end
+        return dapi
+    end
+
+    -- MULTI-SELECT DROPDOWN
+    function api:AddMultiDropdown(label, options, defaults, callback)
+        options = options or {}
+        local selected = {}
+        if defaults then for _,v in ipairs(defaults) do selected[v]=true end end
+        local open = false
+        local MAX_VISIBLE = 5
+        local ITEM_H = 26
+
+        local function SelectedText()
+            local parts={}; for _,opt in ipairs(options) do if selected[opt] then table.insert(parts,opt) end end
+            if #parts==0 then return "None" elseif #parts==1 then return parts[1]
+            else return parts[1].." +"..tostring(#parts-1) end
+        end
+
+        local cont=Instance.new("Frame"); cont.Size=UDim2.new(1,0,0,30)
+        cont.BackgroundColor3=Theme.PanelAlt; cont.BorderSizePixel=0; cont.ClipsDescendants=false; cont.Parent=sectionInner
+        Corner(cont,6); local cs=Stroke(cont,Theme.Border,1); T(cont,"BackgroundColor3","PanelAlt"); T(cs,"Color","Border")
+
+        local hdr=Instance.new("TextButton"); hdr.Size=UDim2.new(1,0,0,30); hdr.BackgroundTransparency=1; hdr.Text=""; hdr.Parent=cont
+
+        local labelLbl=Instance.new("TextLabel"); labelLbl.Text=label; labelLbl.TextSize=11; labelLbl.Font=Enum.Font.Gotham
+        labelLbl.TextColor3=Theme.TextDim; labelLbl.BackgroundTransparency=1
+        labelLbl.Size=UDim2.new(0,0,0,30); labelLbl.AutomaticSize=Enum.AutomaticSize.X
+        labelLbl.Position=UDim2.new(0,10,0,0); labelLbl.TextXAlignment=Enum.TextXAlignment.Left; labelLbl.Parent=hdr
+        T(labelLbl,"TextColor3","TextDim")
+
+        local valLbl=Instance.new("TextLabel"); valLbl.Text=SelectedText(); valLbl.TextSize=12; valLbl.Font=Enum.Font.GothamMedium
+        valLbl.TextColor3=Theme.Text; valLbl.BackgroundTransparency=1
+        valLbl.Size=UDim2.new(1,-52,0,30); valLbl.Position=UDim2.new(0,10,0,0)
+        valLbl.TextXAlignment=Enum.TextXAlignment.Right; valLbl.Parent=hdr; T(valLbl,"TextColor3","Text")
+
+        local arrow=Instance.new("TextLabel"); arrow.Text="▾"; arrow.TextSize=14; arrow.Font=Enum.Font.GothamBold
+        arrow.TextColor3=Theme.TextDim; arrow.BackgroundTransparency=1
+        arrow.Size=UDim2.new(0,24,0,30); arrow.Position=UDim2.new(1,-28,0,0)
+        arrow.TextXAlignment=Enum.TextXAlignment.Center; arrow.Parent=hdr; T(arrow,"TextColor3","TextDim")
+
+        local divLine=Instance.new("Frame"); divLine.Size=UDim2.new(1,-16,0,1); divLine.Position=UDim2.new(0,8,0,30)
+        divLine.BackgroundColor3=Theme.Border; divLine.BorderSizePixel=0; divLine.BackgroundTransparency=1; divLine.Parent=cont
+        T(divLine,"BackgroundColor3","Border")
+
+        local listScroll=Instance.new("ScrollingFrame")
+        listScroll.Size=UDim2.new(1,-12,0,0); listScroll.Position=UDim2.new(0,6,0,36)
+        listScroll.BackgroundTransparency=1; listScroll.BorderSizePixel=0
+        listScroll.ScrollBarThickness=3; listScroll.ScrollBarImageColor3=Theme.Accent
+        listScroll.CanvasSize=UDim2.new(0,0,0,0); listScroll.AutomaticCanvasSize=Enum.AutomaticSize.Y; listScroll.Parent=cont
+        T(listScroll,"ScrollBarImageColor3","Accent")
+        local listLayout=Instance.new("UIListLayout"); listLayout.SortOrder=Enum.SortOrder.LayoutOrder; listLayout.Padding=UDim.new(0,2); listLayout.Parent=listScroll
+
+        local function BuildList()
+            for _,c in ipairs(listScroll:GetChildren()) do if not c:IsA("UIListLayout") then c:Destroy() end end
+            for _,opt in ipairs(options) do
+                local isOn=selected[opt]==true
+                local row=Instance.new("TextButton"); row.Size=UDim2.new(1,0,0,ITEM_H)
+                row.BackgroundColor3=Theme.PanelAlt; row.BackgroundTransparency=isOn and 0 or 1
+                row.Text=""; row.BorderSizePixel=0; row.Parent=listScroll; Corner(row,4); T(row,"BackgroundColor3","PanelAlt")
+
+                -- Checkbox
+                local cb=Instance.new("Frame"); cb.Size=UDim2.new(0,14,0,14); cb.Position=UDim2.new(1,-22,0.5,-7)
+                cb.BackgroundColor3=isOn and Theme.Accent or Theme.ToggleOff; cb.BorderSizePixel=0; cb.Parent=row; Corner(cb,3)
+                T(cb,"BackgroundColor3",isOn and "Accent" or "ToggleOff")
+                local tick=Instance.new("TextLabel"); tick.Text="✓"; tick.TextSize=10; tick.Font=Enum.Font.GothamBold
+                tick.TextColor3=Color3.fromRGB(255,255,255); tick.BackgroundTransparency=1
+                tick.Size=UDim2.new(1,0,1,0); tick.TextXAlignment=Enum.TextXAlignment.Center
+                tick.Visible=isOn; tick.Parent=cb
+
+                local optLbl=Instance.new("TextLabel"); optLbl.Text=opt; optLbl.TextSize=12
+                optLbl.Font=isOn and Enum.Font.GothamMedium or Enum.Font.Gotham
+                optLbl.TextColor3=isOn and Theme.Text or Theme.TextDim; optLbl.BackgroundTransparency=1
+                optLbl.Size=UDim2.new(1,-32,1,0); optLbl.Position=UDim2.new(0,10,0,0)
+                optLbl.TextXAlignment=Enum.TextXAlignment.Left; optLbl.Parent=row
+                T(optLbl,"TextColor3",isOn and "Text" or "TextDim")
+
+                row.MouseEnter:Connect(function() if not selected[opt] then Tw(row,{BackgroundTransparency=0.6},0.1) end end)
+                row.MouseLeave:Connect(function() if not selected[opt] then Tw(row,{BackgroundTransparency=1},0.1) end end)
+                row.MouseButton1Click:Connect(function()
+                    selected[opt]=not selected[opt]; valLbl.Text=SelectedText(); BuildList()
+                    if callback then
+                        local sel={}; for _,o in ipairs(options) do if selected[o] then table.insert(sel,o) end end
+                        callback(sel)
+                    end
+                end)
+            end
+        end
+
+        BuildList()
+
+        local function GetListH()
+            return math.min(#options,MAX_VISIBLE)*(ITEM_H+2)
+        end
+        local function OpenDD()
+            open=true; divLine.BackgroundTransparency=0
+            local lh=GetListH()
+            listScroll.Size=UDim2.new(1,-12,0,lh); cont.Size=UDim2.new(1,0,0,30+1+4+lh+6)
+            Tw(arrow,{Rotation=180},0.2)
+        end
+        local function CloseDD()
+            open=false; divLine.BackgroundTransparency=1
+            cont.Size=UDim2.new(1,0,0,30); listScroll.Size=UDim2.new(1,-12,0,0); Tw(arrow,{Rotation=0},0.2)
+        end
+
+        hdr.MouseButton1Click:Connect(function() if open then CloseDD() else OpenDD() end end)
+        UserInputService.InputBegan:Connect(function(i)
+            if open and i.UserInputType==Enum.UserInputType.MouseButton1 then
+                local mp=UserInputService:GetMouseLocation(); local pos=cont.AbsolutePosition; local sz=cont.AbsoluteSize
+                if mp.X<pos.X or mp.X>pos.X+sz.X or mp.Y<pos.Y or mp.Y>pos.Y+sz.Y then CloseDD() end
+            end
+        end)
+
+        local mapi={}
+        function mapi:Get() local sel={}; for _,o in ipairs(options) do if selected[o] then table.insert(sel,o) end end; return sel end
+        function mapi:Set(vals) selected={}; for _,v in ipairs(vals) do selected[v]=true end; valLbl.Text=SelectedText(); BuildList() end
+        function mapi:SetOptions(newOpts) options=newOpts; selected={}; valLbl.Text=SelectedText(); BuildList() end
+        return mapi
     end
 
     return api
