@@ -570,76 +570,102 @@ function FiberLib.new(title, subtitle)
     shadow.ImageTransparency=0.5; shadow.ScaleType=Enum.ScaleType.Slice; shadow.SliceCenter=Rect.new(49,49,450,450)
     shadow.Size=UDim2.new(1,48,1,48); shadow.Position=UDim2.new(0,-24,0,-24); shadow.BackgroundTransparency=1; shadow.ZIndex=0; shadow.Parent=main
 
-    local sidebar=Instance.new("Frame"); sidebar.Name="Sidebar"; sidebar.Size=UDim2.new(0,140,1,0)
-    sidebar.BackgroundColor3=Theme.Sidebar; sidebar.BorderSizePixel=0; sidebar.Parent=main; Corner(sidebar,10)
-    T(sidebar,"BackgroundColor3","Sidebar")
+    -- ── FULL-WIDTH TITLE BAR ─────────────────────────────────────────
+    local titleBar=Instance.new("Frame"); titleBar.Name="TitleBar"
+    titleBar.Size=UDim2.new(1,0,0,52); titleBar.Position=UDim2.new(0,0,0,0)
+    titleBar.BackgroundColor3=Theme.Sidebar; titleBar.BorderSizePixel=0; titleBar.Parent=main
+    -- Top rounded corners only — mask bottom corners
+    Corner(titleBar,10)
+    local tbMaskBottom=Instance.new("Frame"); tbMaskBottom.Size=UDim2.new(1,0,0,10)
+    tbMaskBottom.Position=UDim2.new(0,0,1,-10); tbMaskBottom.BackgroundColor3=Theme.Sidebar
+    tbMaskBottom.BorderSizePixel=0; tbMaskBottom.Parent=titleBar; T(tbMaskBottom,"BackgroundColor3","Sidebar")
+    T(titleBar,"BackgroundColor3","Sidebar")
+
+    -- Bottom divider line under title bar
+    local titleDiv=Instance.new("Frame"); titleDiv.Size=UDim2.new(1,0,0,1)
+    titleDiv.Position=UDim2.new(0,0,1,-1); titleDiv.BackgroundColor3=Theme.Border
+    titleDiv.BorderSizePixel=0; titleDiv.Parent=titleBar; T(titleDiv,"BackgroundColor3","Border")
+
+    -- Accent dot + title + subtitle on the left
+    local adot=Instance.new("Frame"); adot.Size=UDim2.new(0,7,0,7)
+    adot.Position=UDim2.new(0,12,0.5,-10); adot.BackgroundColor3=Theme.Accent
+    adot.BorderSizePixel=0; adot.Parent=titleBar; Corner(adot,99); T(adot,"BackgroundColor3","Accent")
+
+    local tl=Instance.new("TextLabel"); tl.Text=title or "Fiber"; tl.TextSize=15; tl.Font=Enum.Font.GothamBold
+    tl.TextColor3=Theme.Text; tl.BackgroundTransparency=1; tl.Size=UDim2.new(0,200,0,18)
+    tl.Position=UDim2.new(0,24,0.5,-17); tl.TextXAlignment=Enum.TextXAlignment.Left
+    tl.Parent=titleBar; T(tl,"TextColor3","Text")
+
+    local sl=Instance.new("TextLabel"); sl.Text=subtitle or "| discord.gg/fiber"; sl.TextSize=10; sl.Font=Enum.Font.Gotham
+    sl.TextColor3=Theme.TextDim; sl.BackgroundTransparency=1; sl.Size=UDim2.new(0,200,0,14)
+    sl.Position=UDim2.new(0,24,0.5,2); sl.TextXAlignment=Enum.TextXAlignment.Left
+    sl.Parent=titleBar; T(sl,"TextColor3","TextDim")
+
+    -- Window controls on the right of title bar
+    local ctrl=Instance.new("Frame"); ctrl.Size=UDim2.new(0,50,0,20)
+    ctrl.Position=UDim2.new(1,-58,0.5,-6); ctrl.BackgroundTransparency=1; ctrl.Parent=titleBar
+    local cl=Instance.new("UIListLayout"); cl.FillDirection=Enum.FillDirection.Horizontal
+    cl.HorizontalAlignment=Enum.HorizontalAlignment.Right; cl.Padding=UDim.new(0,5); cl.Parent=ctrl
+    local function WinBtn(col)
+        local b=Instance.new("TextButton"); b.Size=UDim2.new(0,12,0,12); b.BackgroundColor3=col
+        b.Text=""; b.BorderSizePixel=0; b.Parent=ctrl; Corner(b,99); return b
+    end
+    local closeBtn=WinBtn(Color3.fromRGB(200,60,60)); local minBtn=WinBtn(Color3.fromRGB(200,160,40))
+    closeBtn.MouseButton1Click:Connect(function()
+        Tw(main,{Size=UDim2.new(0,0,0,0),BackgroundTransparency=1},0.2); task.wait(0.2); gui:Destroy()
+    end)
+    local minned=false
+    minBtn.MouseButton1Click:Connect(function()
+        minned=not minned
+        if minned then Tw(main,{Size=UDim2.new(0,720,0,52)},0.2); sidebar.Visible=false
+        else Tw(main,{Size=UDim2.new(0,720,0,480)},0.2); sidebar.Visible=true end
+    end)
+
+    -- ── SIDEBAR (below title bar) ─────────────────────────────────────
+    local sidebar=Instance.new("Frame"); sidebar.Name="Sidebar"
+    sidebar.Size=UDim2.new(0,140,1,-52); sidebar.Position=UDim2.new(0,0,0,52)
+    sidebar.BackgroundColor3=Theme.Sidebar; sidebar.BorderSizePixel=0; sidebar.Parent=main
+    -- Mask top corners (title bar covers them)
+    local sbMaskTop=Instance.new("Frame"); sbMaskTop.Size=UDim2.new(1,0,0,10)
+    sbMaskTop.Position=UDim2.new(0,0,0,0); sbMaskTop.BackgroundColor3=Theme.Sidebar
+    sbMaskTop.BorderSizePixel=0; sbMaskTop.Parent=sidebar; T(sbMaskTop,"BackgroundColor3","Sidebar")
+    -- Bottom rounded corner
+    Corner(sidebar,10); T(sidebar,"BackgroundColor3","Sidebar")
 
     local smask=Instance.new("Frame"); smask.Size=UDim2.new(0,10,1,0); smask.Position=UDim2.new(1,-10,0,0)
     smask.BackgroundColor3=Theme.Sidebar; smask.BorderSizePixel=0; smask.Parent=sidebar; T(smask,"BackgroundColor3","Sidebar")
 
-    local adot=Instance.new("Frame"); adot.Size=UDim2.new(0,7,0,7); adot.Position=UDim2.new(0,10,0,22)
-    adot.BackgroundColor3=Theme.Accent; adot.BorderSizePixel=0; adot.Parent=sidebar; Corner(adot,99); T(adot,"BackgroundColor3","Accent")
+    local tabList=Instance.new("ScrollingFrame"); tabList.Name="TabList"
+    tabList.Size=UDim2.new(1,0,1,-56); tabList.Position=UDim2.new(0,0,0,4)
+    tabList.BackgroundTransparency=1; tabList.BorderSizePixel=0; tabList.ScrollBarThickness=0
+    tabList.CanvasSize=UDim2.new(0,0,0,0); tabList.AutomaticCanvasSize=Enum.AutomaticSize.Y; tabList.Parent=sidebar
+    local tll=Instance.new("UIListLayout"); tll.SortOrder=Enum.SortOrder.LayoutOrder
+    tll.Padding=UDim.new(0,2); tll.Parent=tabList; Pad(tabList,4,4,8,8)
 
-    local tl=Instance.new("TextLabel"); tl.Text=title or "Fiber"; tl.TextSize=15; tl.Font=Enum.Font.GothamBold
-    tl.TextColor3=Theme.Text; tl.BackgroundTransparency=1; tl.Size=UDim2.new(1,-20,0,18); tl.Position=UDim2.new(0,22,0,15)
-    tl.TextXAlignment=Enum.TextXAlignment.Left; tl.Parent=sidebar; T(tl,"TextColor3","Text")
-
-    local sl=Instance.new("TextLabel"); sl.Text=subtitle or "| discord.gg/fiber"; sl.TextSize=10; sl.Font=Enum.Font.Gotham
-    sl.TextColor3=Theme.TextDim; sl.BackgroundTransparency=1; sl.Size=UDim2.new(1,-20,0,14); sl.Position=UDim2.new(0,22,0,33)
-    sl.TextXAlignment=Enum.TextXAlignment.Left; sl.Parent=sidebar; T(sl,"TextColor3","TextDim")
-
-    local sdiv=Instance.new("Frame"); sdiv.Size=UDim2.new(1,-20,0,1); sdiv.Position=UDim2.new(0,10,0,52)
-    sdiv.BackgroundColor3=Theme.Border; sdiv.BorderSizePixel=0; sdiv.Parent=sidebar; T(sdiv,"BackgroundColor3","Border")
-
-    local tabList=Instance.new("ScrollingFrame"); tabList.Name="TabList"; tabList.Size=UDim2.new(1,0,1,-120); tabList.Position=UDim2.new(0,0,0,58)
-    tabList.BackgroundTransparency=1; tabList.BorderSizePixel=0; tabList.ScrollBarThickness=0; tabList.CanvasSize=UDim2.new(0,0,0,0); tabList.AutomaticCanvasSize=Enum.AutomaticSize.Y; tabList.Parent=sidebar
-    local tll=Instance.new("UIListLayout"); tll.SortOrder=Enum.SortOrder.LayoutOrder; tll.Padding=UDim.new(0,2); tll.Parent=tabList; Pad(tabList,4,4,8,8)
-
-    local ub=Instance.new("Frame"); ub.Size=UDim2.new(1,0,0,44); ub.Position=UDim2.new(0,0,1,-46); ub.BackgroundTransparency=1; ub.Parent=sidebar
+    -- User badge pinned at bottom of sidebar
+    local ub=Instance.new("Frame"); ub.Size=UDim2.new(1,0,0,44)
+    ub.Position=UDim2.new(0,0,1,-46); ub.BackgroundTransparency=1; ub.Parent=sidebar
     local av=Instance.new("ImageLabel"); av.Size=UDim2.new(0,28,0,28); av.Position=UDim2.new(0,10,0.5,-14)
     av.BackgroundColor3=Theme.AccentDim; av.Image="rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=48&h=48"
     av.Parent=ub; Corner(av,99); T(av,"BackgroundColor3","AccentDim")
     local un=Instance.new("TextLabel"); un.Text=LocalPlayer.Name; un.TextSize=12; un.Font=Enum.Font.GothamMedium
-    un.TextColor3=Theme.Text; un.BackgroundTransparency=1; un.Size=UDim2.new(1,-50,0,14); un.Position=UDim2.new(0,44,0.5,-14)
-    un.TextXAlignment=Enum.TextXAlignment.Left; un.Parent=ub; T(un,"TextColor3","Text")
+    un.TextColor3=Theme.Text; un.BackgroundTransparency=1; un.Size=UDim2.new(1,-50,0,14)
+    un.Position=UDim2.new(0,44,0.5,-14); un.TextXAlignment=Enum.TextXAlignment.Left
+    un.Parent=ub; T(un,"TextColor3","Text")
     local ut=Instance.new("TextLabel"); ut.Text="@"..LocalPlayer.Name; ut.TextSize=10; ut.Font=Enum.Font.Gotham
-    ut.TextColor3=Theme.TextDim; ut.BackgroundTransparency=1; ut.Size=UDim2.new(1,-50,0,12); ut.Position=UDim2.new(0,44,0.5,2)
-    ut.TextXAlignment=Enum.TextXAlignment.Left; ut.Parent=ub; T(ut,"TextColor3","TextDim")
+    ut.TextColor3=Theme.TextDim; ut.BackgroundTransparency=1; ut.Size=UDim2.new(1,-50,0,12)
+    ut.Position=UDim2.new(0,44,0.5,2); ut.TextXAlignment=Enum.TextXAlignment.Left
+    ut.Parent=ub; T(ut,"TextColor3","TextDim")
 
+    -- ── CONTENT AREA (below title bar, right of sidebar) ─────────────
     local content=Instance.new("Frame"); content.Name="Content"
-    content.Size=UDim2.new(1,-150,1,-46); content.Position=UDim2.new(0,145,0,41)
+    content.Size=UDim2.new(1,-150,1,-58); content.Position=UDim2.new(0,145,0,53)
     content.BackgroundTransparency=1; content.Parent=main
 
-    -- Top bar spanning the content side
-    local topBar=Instance.new("Frame"); topBar.Name="TopBar"
-    topBar.Size=UDim2.new(1,-150,0,36); topBar.Position=UDim2.new(0,145,0,5)
-    topBar.BackgroundColor3=Theme.Panel; topBar.BorderSizePixel=0; topBar.Parent=main
-    Corner(topBar,8); local tbs=Stroke(topBar,Theme.Border,1); T(topBar,"BackgroundColor3","Panel"); T(tbs,"Color","Border")
+    -- Dummy topBarLabel for _SelectTab compatibility (no separate top bar needed)
+    local topBarLabel=Instance.new("TextLabel"); topBarLabel.Visible=false; topBarLabel.Parent=main
 
-    -- Mask left corners so left side is flat against sidebar
-    local topBarMaskL=Instance.new("Frame"); topBarMaskL.Size=UDim2.new(0,10,1,0)
-    topBarMaskL.Position=UDim2.new(0,0,0,0); topBarMaskL.BackgroundColor3=Theme.Panel
-    topBarMaskL.BorderSizePixel=0; topBarMaskL.Parent=topBar; T(topBarMaskL,"BackgroundColor3","Panel")
-
-    -- Active tab name label centered in topBar
-    local topBarLabel=Instance.new("TextLabel"); topBarLabel.Text=""
-    topBarLabel.TextSize=13; topBarLabel.Font=Enum.Font.GothamBold
-    topBarLabel.TextColor3=Theme.Text; topBarLabel.BackgroundTransparency=1
-    topBarLabel.Size=UDim2.new(1,-80,1,0); topBarLabel.Position=UDim2.new(0,16,0,0)
-    topBarLabel.TextXAlignment=Enum.TextXAlignment.Center; topBarLabel.Parent=topBar
-    T(topBarLabel,"TextColor3","Text")
-
-    -- Window controls sit inside the topBar (right side)
-    local ctrl=Instance.new("Frame"); ctrl.Size=UDim2.new(0,50,0,20)
-    ctrl.Position=UDim2.new(1,-58,0.5,-6); ctrl.BackgroundTransparency=1; ctrl.Parent=topBar
-    local cl=Instance.new("UIListLayout"); cl.FillDirection=Enum.FillDirection.Horizontal; cl.HorizontalAlignment=Enum.HorizontalAlignment.Right; cl.Padding=UDim.new(0,4); cl.Parent=ctrl
-    local function WinBtn(col) local b=Instance.new("TextButton"); b.Size=UDim2.new(0,12,0,12); b.BackgroundColor3=col; b.Text=""; b.BorderSizePixel=0; b.Parent=ctrl; Corner(b,99); return b end
-    local closeBtn=WinBtn(Color3.fromRGB(200,60,60)); local minBtn=WinBtn(Color3.fromRGB(200,160,40))
-    closeBtn.MouseButton1Click:Connect(function() Tw(main,{Size=UDim2.new(0,0,0,0),BackgroundTransparency=1},0.2); task.wait(0.2); gui:Destroy() end)
-    local minned=false
-    minBtn.MouseButton1Click:Connect(function() minned=not minned; if minned then Tw(main,{Size=UDim2.new(0,140,0,480)},0.2); content.Visible=false; topBar.Visible=false else Tw(main,{Size=UDim2.new(0,720,0,480)},0.2); content.Visible=true; topBar.Visible=true end end)
-
-    MakeDraggable(main,sidebar)
+    MakeDraggable(main,titleBar)
     local vis=true
     UserInputService.InputBegan:Connect(function(i,gp) if gp then return end; if i.KeyCode==Enum.KeyCode.LeftControl then vis=not vis; main.Visible=vis end end)
 
