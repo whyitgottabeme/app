@@ -606,22 +606,47 @@ function FiberLib.new(title, subtitle)
     ut.TextColor3=Theme.TextDim; ut.BackgroundTransparency=1; ut.Size=UDim2.new(1,-50,0,12); ut.Position=UDim2.new(0,44,0.5,2)
     ut.TextXAlignment=Enum.TextXAlignment.Left; ut.Parent=ub; T(ut,"TextColor3","TextDim")
 
-    local content=Instance.new("Frame"); content.Name="Content"; content.Size=UDim2.new(1,-150,1,-10); content.Position=UDim2.new(0,145,0,5); content.BackgroundTransparency=1; content.Parent=main
+    local content=Instance.new("Frame"); content.Name="Content"
+    content.Size=UDim2.new(1,-150,1,-46); content.Position=UDim2.new(0,145,0,41)
+    content.BackgroundTransparency=1; content.Parent=main
 
-    local ctrl=Instance.new("Frame"); ctrl.Size=UDim2.new(0,50,0,20); ctrl.Position=UDim2.new(1,-58,0,8); ctrl.BackgroundTransparency=1; ctrl.Parent=main
+    -- Top bar spanning the content side
+    local topBar=Instance.new("Frame"); topBar.Name="TopBar"
+    topBar.Size=UDim2.new(1,-150,0,36); topBar.Position=UDim2.new(0,145,0,5)
+    topBar.BackgroundColor3=Theme.Panel; topBar.BorderSizePixel=0; topBar.Parent=main
+    Corner(topBar,8); local tbs=Stroke(topBar,Theme.Border,1); T(topBar,"BackgroundColor3","Panel"); T(tbs,"Color","Border")
+
+    -- Mask left corners so left side is flat against sidebar
+    local topBarMaskL=Instance.new("Frame"); topBarMaskL.Size=UDim2.new(0,10,1,0)
+    topBarMaskL.Position=UDim2.new(0,0,0,0); topBarMaskL.BackgroundColor3=Theme.Panel
+    topBarMaskL.BorderSizePixel=0; topBarMaskL.Parent=topBar; T(topBarMaskL,"BackgroundColor3","Panel")
+
+    -- Active tab name label centered in topBar
+    local topBarLabel=Instance.new("TextLabel"); topBarLabel.Text=""
+    topBarLabel.TextSize=13; topBarLabel.Font=Enum.Font.GothamBold
+    topBarLabel.TextColor3=Theme.Text; topBarLabel.BackgroundTransparency=1
+    topBarLabel.Size=UDim2.new(1,-80,1,0); topBarLabel.Position=UDim2.new(0,16,0,0)
+    topBarLabel.TextXAlignment=Enum.TextXAlignment.Center; topBarLabel.Parent=topBar
+    T(topBarLabel,"TextColor3","Text")
+
+    -- Window controls sit inside the topBar (right side)
+    local ctrl=Instance.new("Frame"); ctrl.Size=UDim2.new(0,50,0,20)
+    ctrl.Position=UDim2.new(1,-58,0.5,-6); ctrl.BackgroundTransparency=1; ctrl.Parent=topBar
     local cl=Instance.new("UIListLayout"); cl.FillDirection=Enum.FillDirection.Horizontal; cl.HorizontalAlignment=Enum.HorizontalAlignment.Right; cl.Padding=UDim.new(0,4); cl.Parent=ctrl
     local function WinBtn(col) local b=Instance.new("TextButton"); b.Size=UDim2.new(0,12,0,12); b.BackgroundColor3=col; b.Text=""; b.BorderSizePixel=0; b.Parent=ctrl; Corner(b,99); return b end
     local closeBtn=WinBtn(Color3.fromRGB(200,60,60)); local minBtn=WinBtn(Color3.fromRGB(200,160,40))
     closeBtn.MouseButton1Click:Connect(function() Tw(main,{Size=UDim2.new(0,0,0,0),BackgroundTransparency=1},0.2); task.wait(0.2); gui:Destroy() end)
     local minned=false
-    minBtn.MouseButton1Click:Connect(function() minned=not minned; if minned then Tw(main,{Size=UDim2.new(0,140,0,480)},0.2); content.Visible=false else Tw(main,{Size=UDim2.new(0,720,0,480)},0.2); content.Visible=true end end)
+    minBtn.MouseButton1Click:Connect(function() minned=not minned; if minned then Tw(main,{Size=UDim2.new(0,140,0,480)},0.2); content.Visible=false; topBar.Visible=false else Tw(main,{Size=UDim2.new(0,720,0,480)},0.2); content.Visible=true; topBar.Visible=true end end)
 
     MakeDraggable(main,sidebar)
     local vis=true
     UserInputService.InputBegan:Connect(function(i,gp) if gp then return end; if i.KeyCode==Enum.KeyCode.LeftControl then vis=not vis; main.Visible=vis end end)
 
     self._gui=gui; self._main=main; self._sidebar=sidebar; self._tabList=tabList; self._content=content
-    self._tabOrder=0
+    self._topBarLabel=topBarLabel; self._tabOrder=0
+    -- Track topBar elements
+    T(topBarLabel,"TextColor3","Text")
     self:_BuildSettingsTab()
     return self
 end
@@ -693,6 +718,8 @@ function FiberLib:_SelectTab(tabData)
     Tw(tabData._button,{BackgroundColor3=Theme.PanelAlt,BackgroundTransparency=0},0.15)
     Tw(tabData._btnLabel,{TextColor3=Theme.Text},0.15)
     Tw(tabData._accentBar,{BackgroundTransparency=0},0.15)
+    -- Update top bar label
+    if self._topBarLabel then self._topBarLabel.Text=tabData.name end
 end
 
 ------------------------------------------------------------------------
